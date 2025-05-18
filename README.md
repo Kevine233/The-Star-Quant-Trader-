@@ -1,4 +1,4 @@
-# The Star系统 (Smart Money Follow System) - v4 深度解析
+# The Star系统 (Smart Money Follow System) -开发未完成
 
 ## 1. 项目简介
 
