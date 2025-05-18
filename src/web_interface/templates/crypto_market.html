@@ -1,0 +1,954 @@
+{% extends "base.html" %}
+{% block title %}加密货币市场 - 跟随庄家自动交易系统{% endblock %}
+
+{% block scripts %}
+<!-- 添加页面特定的脚本 -->
+<script src="/static/js/crypto_market.js"></script>
+<script src="/static/js/market_alerts.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-4 mb-4">加密货币市场监控</h1>
+
+    <!-- 市场概览 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">市场概览</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">市场总市值</h5>
+                            <h2 class="text-primary" id="total-market-cap">--</h2>
+                            <p class="text-muted mb-0" id="market-cap-change">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">24小时成交量</h5>
+                            <h2 class="text-primary" id="total-volume">--</h2>
+                            <p class="text-muted mb-0" id="volume-change">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">BTC 主导地位</h5>
+                            <h2 class="text-primary" id="btc-dominance">--</h2>
+                            <p class="text-muted mb-0" id="dominance-change">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">恐惧贪婪指数</h5>
+                            <h2 class="text-primary" id="fear-greed-index">--</h2>
+                            <p class="text-muted mb-0" id="fear-greed-status">--</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 币种搜索 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">币种搜索</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="crypto-search" placeholder="输入币种名称或代码...">
+                        <button class="btn btn-primary" type="button" id="search-btn">搜索</button>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <select class="form-select" id="crypto-category">
+                        <option value="all">所有类别</option>
+                        <option value="defi">DeFi</option>
+                        <option value="nft">NFT</option>
+                        <option value="layer1">Layer 1</option>
+                        <option value="layer2">Layer 2</option>
+                        <option value="meme">Meme</option>
+                        <option value="ai">AI</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 热门币种 -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">热门币种</h5>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-secondary active" data-filter="market_cap">市值排名</button>
+                <button type="button" class="btn btn-outline-secondary" data-filter="volume">成交量</button>
+                <button type="button" class="btn btn-outline-secondary" data-filter="price_change">涨幅</button>
+                <button type="button" class="btn btn-outline-secondary" data-filter="manipulation">操纵指数</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>币种</th>
+                            <th>价格</th>
+                            <th>24h涨跌</th>
+                            <th>市值</th>
+                            <th>24h成交量</th>
+                            <th>庄家操纵指数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="crypto-table-body">
+                        <tr>
+                            <td colspan="8" class="text-center">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 币种详情 -->
+    <div class="card mb-4 d-none" id="crypto-detail-card">
+        <div class="card-header">
+            <h5 class="mb-0" id="crypto-detail-title">币种详情</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">基本信息</h5>
+                            <div class="d-flex align-items-center mb-3">
+                                <img id="crypto-logo" src="" alt="Logo" class="me-2" style="width: 32px; height: 32px;">
+                                <h4 id="crypto-name" class="mb-0">Bitcoin (BTC)</h4>
+                            </div>
+                            <table class="table table-sm">
+                                <tbody id="crypto-info-table">
+                                    <tr>
+                                        <td>价格</td>
+                                        <td id="crypto-price">$0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>24h涨跌</td>
+                                        <td id="crypto-change">0%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>市值</td>
+                                        <td id="crypto-market-cap">$0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>24h成交量</td>
+                                        <td id="crypto-volume">$0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>流通量</td>
+                                        <td id="crypto-supply">0</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">庄家评分</h5>
+                            <div class="text-center my-4">
+                                <div class="progress" style="height: 20px;">
+                                    <div id="manipulation-score-bar" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0</div>
+                                </div>
+                                <h2 id="manipulation-score" class="mt-3">0</h2>
+                                <p id="manipulation-status" class="text-muted">无明显庄家痕迹</p>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <td>成交量异常</td>
+                                            <td id="volume-anomaly-score">0/100</td>
+                                        </tr>
+                                        <tr>
+                                            <td>价格操纵</td>
+                                            <td id="price-manipulation-score">0/100</td>
+                                        </tr>
+                                        <tr>
+                                            <td>大单异动</td>
+                                            <td id="big-order-score">0/100</td>
+                                        </tr>
+                                        <tr>
+                                            <td>资金流向</td>
+                                            <td id="fund-flow-score">0/100</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <ul class="nav nav-tabs" id="cryptoDetailTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="price-tab" data-bs-toggle="tab" data-bs-target="#price" type="button" role="tab" aria-controls="price" aria-selected="true">价格走势</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="indicators-tab" data-bs-toggle="tab" data-bs-target="#indicators" type="button" role="tab" aria-controls="indicators" aria-selected="false">技术指标</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="onchain-tab" data-bs-toggle="tab" data-bs-target="#onchain" type="button" role="tab" aria-controls="onchain" aria-selected="false">链上数据</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="social-tab" data-bs-toggle="tab" data-bs-target="#social" type="button" role="tab" aria-controls="social" aria-selected="false">社交情绪</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content p-3 border border-top-0 rounded-bottom" id="cryptoDetailTabsContent">
+                        <div class="tab-pane fade show active" id="price" role="tabpanel" aria-labelledby="price-tab">
+                            <div class="mb-3">
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-secondary active" data-timeframe="1d">1天</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-timeframe="1w">1周</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-timeframe="1m">1月</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-timeframe="3m">3月</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-timeframe="1y">1年</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-timeframe="all">全部</button>
+                                </div>
+                            </div>
+                            <div id="price-chart" style="height: 400px;">
+                                <div class="d-flex justify-content-center align-items-center h-100">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="indicators" role="tabpanel" aria-labelledby="indicators-tab">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">RSI (14)</h5>
+                                            <div id="rsi-chart" style="height: 150px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">MACD</h5>
+                                            <div id="macd-chart" style="height: 150px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">布林带</h5>
+                                            <div id="bollinger-chart" style="height: 150px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">OBV</h5>
+                                            <div id="obv-chart" style="height: 150px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="onchain" role="tabpanel" aria-labelledby="onchain-tab">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">大额交易</h5>
+                                            <div id="whale-transactions-chart" style="height: 200px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">交易所资金流向</h5>
+                                            <div id="exchange-flow-chart" style="height: 200px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">活跃地址数量</h5>
+                                            <div id="active-addresses-chart" style="height: 200px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="social" role="tabpanel" aria-labelledby="social-tab">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">社交情绪</h5>
+                                            <div id="social-sentiment-chart" style="height: 200px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">社交热度</h5>
+                                            <div id="social-volume-chart" style="height: 200px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">热门话题</h5>
+                                            <div class="d-flex flex-wrap gap-2" id="trending-topics">
+                                                <span class="badge bg-primary">Loading...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 市场异动 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">市场异动</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-header">庄家操作预警</div>
+                        <div class="list-group list-group-flush" id="manipulation-alerts">
+                            <div class="list-group-item text-center">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-header">大额交易</div>
+                        <div class="list-group list-group-flush" id="whale-alerts">
+                            <div class="list-group-item text-center">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript代码 -->
+<script>
+    // 设置全局viewCryptoDetail函数，确保在DOM加载之前就定义
+    window.viewCryptoDetail = function(symbol) {
+        console.log('viewCryptoDetail调用成功，币种：', symbol);
+        
+        // 显示详情卡片
+        document.getElementById('crypto-detail-card').classList.remove('d-none');
+        document.getElementById('crypto-detail-title').textContent = `${symbol.toUpperCase()} 详情`;
+
+        // 滚动到详情卡片
+        document.getElementById('crypto-detail-card').scrollIntoView({ behavior: 'smooth' });
+
+        // 重置图表容器
+        document.getElementById('price-chart').innerHTML = '<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+        // 发送API请求获取币种详情
+        fetch(`/api/crypto/data?symbol=${symbol}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderCryptoDetail(data.data);
+                } else {
+                    console.error('获取币种详情失败:', data.message);
+                    // 显示错误信息
+                    document.getElementById('price-chart').innerHTML = `<div class="alert alert-danger">获取数据失败: ${data.message}</div>`;
+
+                    // 加载模拟数据
+                    setTimeout(() => renderCryptoDetail(getMockCryptoDetail(symbol)), 500);
+                }
+            })
+            .catch(error => {
+                console.error('获取币种详情错误:', error);
+                // 显示错误信息
+                document.getElementById('price-chart').innerHTML = '<div class="alert alert-danger">获取数据错误</div>';
+
+                // 加载模拟数据
+                setTimeout(() => renderCryptoDetail(getMockCryptoDetail(symbol)), 500);
+            });
+
+        // 发送API请求获取币种分析
+        fetch(`/api/crypto/analysis?symbol=${symbol}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderCryptoAnalysis(data.data);
+                } else {
+                    console.error('获取币种分析失败:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('获取币种分析错误:', error);
+            });
+    };
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('页面加载完成，初始化功能...');
+        
+        // 初始化市场概览数据
+        updateMarketOverview();
+
+        // 初始化币种列表
+        loadCryptoList('market_cap');
+
+        // 绑定币种列表筛选按钮事件
+        document.querySelectorAll('[data-filter]').forEach(button => {
+            button.addEventListener('click', function() {
+                // 更新按钮状态
+                document.querySelector('[data-filter].active').classList.remove('active');
+                this.classList.add('active');
+
+                // 加载币种列表
+                loadCryptoList(this.dataset.filter);
+            });
+        });
+
+        // 绑定搜索按钮事件
+        document.getElementById('search-btn').addEventListener('click', function() {
+            const keyword = document.getElementById('crypto-search').value.trim();
+            if (keyword) {
+                searchCrypto(keyword);
+            }
+        });
+
+        // 绑定搜索框回车事件
+        document.getElementById('crypto-search').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const keyword = this.value.trim();
+                if (keyword) {
+                    searchCrypto(keyword);
+                }
+            }
+        });
+
+        // 绑定分类选择事件
+        document.getElementById('crypto-category').addEventListener('change', function() {
+            const filter = document.querySelector('[data-filter].active').dataset.filter;
+            loadCryptoList(filter, this.value);
+        });
+
+        // 定时刷新数据 - 每15秒更新一次加密货币列表
+        setInterval(function() {
+            const filter = document.querySelector('[data-filter].active').dataset.filter;
+            const category = document.getElementById('crypto-category').value;
+            loadCryptoList(filter, category);
+            console.log('自动刷新加密货币列表数据...');
+        }, 15000);
+        
+        // 定时刷新市场概览 - 每分钟
+        setInterval(updateMarketOverview, 60000);
+        
+        // 手动绑定表格中的"查看"按钮事件 - 为了解决动态生成内容的事件绑定问题
+        document.getElementById('crypto-table-body').addEventListener('click', function(e) {
+            // 检查点击的是否是查看按钮
+            if (e.target && e.target.classList.contains('view-crypto')) {
+                e.preventDefault();
+                const symbol = e.target.dataset.symbol;
+                console.log('表格中点击查看按钮:', symbol);
+                window.viewCryptoDetail(symbol);
+            }
+        });
+    });
+
+    // 更新市场概览数据
+    function updateMarketOverview() {
+        fetch('/api/crypto/market_overview')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const overview = data.data;
+
+                    // 更新市场总市值
+                    document.getElementById('total-market-cap').textContent = formatCurrency(overview.total_market_cap);
+                    document.getElementById('market-cap-change').textContent = formatPercent(overview.market_cap_change_24h);
+                    document.getElementById('market-cap-change').className = overview.market_cap_change_24h >= 0 ? 'text-success mb-0' : 'text-danger mb-0';
+
+                    // 更新24小时成交量
+                    document.getElementById('total-volume').textContent = formatCurrency(overview.total_volume_24h);
+                    document.getElementById('volume-change').textContent = formatPercent(overview.volume_change_24h);
+                    document.getElementById('volume-change').className = overview.volume_change_24h >= 0 ? 'text-success mb-0' : 'text-danger mb-0';
+
+                    // 更新BTC主导地位
+                    document.getElementById('btc-dominance').textContent = overview.btc_dominance.toFixed(2) + '%';
+                    document.getElementById('dominance-change').textContent = formatPercent(overview.dominance_change_24h);
+                    document.getElementById('dominance-change').className = overview.dominance_change_24h >= 0 ? 'text-success mb-0' : 'text-danger mb-0';
+
+                    // 更新恐惧贪婪指数
+                    document.getElementById('fear-greed-index').textContent = overview.fear_greed_value;
+                    document.getElementById('fear-greed-status').textContent = overview.fear_greed_class;
+
+                    // 设置恐惧贪婪指数颜色
+                    const fearGreedElement = document.getElementById('fear-greed-index');
+                    if (overview.fear_greed_value <= 25) {
+                        fearGreedElement.className = 'text-danger';
+                    } else if (overview.fear_greed_value <= 50) {
+                        fearGreedElement.className = 'text-warning';
+                    } else if (overview.fear_greed_value <= 75) {
+                        fearGreedElement.className = 'text-info';
+                    } else {
+                        fearGreedElement.className = 'text-success';
+                    }
+                } else {
+                    console.error('获取市场概览数据失败:', data.message);
+
+                    // 填充模拟数据
+                    updateOverviewWithMockData();
+                }
+            })
+            .catch(error => {
+                console.error('获取市场概览数据错误:', error);
+
+                // 填充模拟数据
+                updateOverviewWithMockData();
+            });
+    }
+
+    // 使用模拟数据更新市场概览（当API请求失败时）
+    function updateOverviewWithMockData() {
+        document.getElementById('total-market-cap').textContent = '$2.53T';
+        document.getElementById('market-cap-change').textContent = '+2.4%';
+        document.getElementById('market-cap-change').className = 'text-success mb-0';
+
+        document.getElementById('total-volume').textContent = '$89.7B';
+        document.getElementById('volume-change').textContent = '+5.8%';
+        document.getElementById('volume-change').className = 'text-success mb-0';
+
+        document.getElementById('btc-dominance').textContent = '51.2%';
+        document.getElementById('dominance-change').textContent = '-0.3%';
+        document.getElementById('dominance-change').className = 'text-danger mb-0';
+
+        document.getElementById('fear-greed-index').textContent = '65';
+        document.getElementById('fear-greed-index').className = 'text-info';
+        document.getElementById('fear-greed-status').textContent = '贪婪';
+    }
+
+    // 加载币种列表
+    function loadCryptoList(filter, category = 'all') {
+        console.log(`加载币种列表: filter=${filter}, category=${category}`);
+        // 显示加载状态
+        document.getElementById('crypto-table-body').innerHTML = '<tr><td colspan="8" class="text-center"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>加载中...</td></tr>';
+
+        // 发送API请求获取币种列表
+        fetch(`/api/crypto/list?filter=${filter}&category=${category}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderCryptoTable(data.data);
+                } else {
+                    console.error('获取币种列表失败:', data.message);
+                    // 显示错误信息
+                    document.getElementById('crypto-table-body').innerHTML = `<tr><td colspan="8" class="text-center text-danger">获取数据失败: ${data.message}</td></tr>`;
+
+                    // 加载模拟数据
+                    setTimeout(() => renderCryptoTable(getMockCryptoList()), 500);
+                }
+            })
+            .catch(error => {
+                console.error('获取币种列表错误:', error);
+                // 显示错误信息
+                document.getElementById('crypto-table-body').innerHTML = `<tr><td colspan="8" class="text-center text-danger">获取数据错误</td></tr>`;
+
+                // 加载模拟数据
+                setTimeout(() => renderCryptoTable(getMockCryptoList()), 500);
+            });
+    }
+
+    // 渲染币种表格
+    function renderCryptoTable(cryptoList) {
+        console.log('渲染币种表格，数据条数:', cryptoList ? cryptoList.length : 0);
+        const tableBody = document.getElementById('crypto-table-body');
+
+        if (!cryptoList || cryptoList.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="8" class="text-center">没有找到币种数据</td></tr>';
+            return;
+        }
+
+        let html = '';
+
+        cryptoList.forEach((crypto, index) => {
+            const priceChangeClass = crypto.price_change_24h >= 0 ? 'text-success' : 'text-danger';
+            const manipulationClass = crypto.manipulation_score >= 70 ? 'text-danger' : 
+                                    crypto.manipulation_score >= 50 ? 'text-warning' : 'text-muted';
+            
+            // 确保symbol是小写的
+            const symbol = crypto.symbol.toLowerCase();
+            
+            // 构建显示格式：BTC/USDT（修正之前的BTC/undefined为正确的格式）
+            const displaySymbol = `${symbol.toUpperCase()}/USDT`;
+
+            html += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <div>${crypto.name}</div>
+                                <small class="text-muted">${displaySymbol}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${formatCurrency(crypto.current_price)}</td>
+                    <td class="${priceChangeClass}">${formatPercent(crypto.price_change_24h)}</td>
+                    <td>${formatCurrency(crypto.market_cap)}</td>
+                    <td>${formatCurrency(crypto.total_volume)}</td>
+                    <td class="${manipulationClass}">${crypto.manipulation_score !== undefined ? Math.round(crypto.manipulation_score) : 0}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary view-crypto" data-symbol="${symbol}">查看</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tableBody.innerHTML = html;
+    }
+
+    // 搜索币种
+    function searchCrypto(keyword) {
+        // 显示加载状态
+        document.getElementById('crypto-table-body').innerHTML = '<tr><td colspan="8" class="text-center"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>搜索中...</td></tr>';
+
+        // 发送API请求搜索币种
+        fetch('/api/crypto/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ keyword: keyword })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderCryptoTable(data.data);
+                } else {
+                    console.error('搜索币种失败:', data.message);
+                    document.getElementById('crypto-table-body').innerHTML = `<tr><td colspan="8" class="text-center text-danger">搜索失败: ${data.message}</td></tr>`;
+                }
+            })
+            .catch(error => {
+                console.error('搜索币种错误:', error);
+                document.getElementById('crypto-table-body').innerHTML = '<tr><td colspan="8" class="text-center text-danger">搜索错误</td></tr>';
+            });
+    }
+
+    // 渲染币种详情
+    function renderCryptoDetail(data) {
+        // 更新基本信息
+        document.getElementById('crypto-logo').src = data.image || '/static/img/crypto/default.png';
+        document.getElementById('crypto-name').textContent = `${data.name} (${data.symbol.toUpperCase()})`;
+        document.getElementById('crypto-price').textContent = formatCurrency(data.current_price);
+
+        const priceChangeElement = document.getElementById('crypto-change');
+        priceChangeElement.textContent = formatPercent(data.price_change_24h);
+        priceChangeElement.className = data.price_change_24h >= 0 ? 'text-success' : 'text-danger';
+
+        document.getElementById('crypto-market-cap').textContent = formatCurrency(data.market_cap);
+        document.getElementById('crypto-volume').textContent = formatCurrency(data.total_volume);
+        document.getElementById('crypto-supply').textContent = formatNumber(data.circulating_supply) + ' ' + data.symbol.toUpperCase();
+
+        // 绘制价格图表
+        renderPriceChart(data);
+    }
+
+    // 渲染币种分析
+    function renderCryptoAnalysis(data) {
+        // 更新庄家评分
+        const manipulationScore = data.smart_money_analysis.manipulation_score;
+        document.getElementById('manipulation-score').textContent = manipulationScore;
+        document.getElementById('manipulation-score-bar').style.width = `${manipulationScore}%`;
+        document.getElementById('manipulation-score-bar').setAttribute('aria-valuenow', manipulationScore);
+
+        // 设置庄家评分颜色
+        const scoreBar = document.getElementById('manipulation-score-bar');
+        if (manipulationScore >= 70) {
+            scoreBar.className = 'progress-bar bg-danger';
+            document.getElementById('manipulation-status').textContent = '强烈的庄家操纵迹象';
+            document.getElementById('manipulation-status').className = 'text-danger';
+        } else if (manipulationScore >= 50) {
+            scoreBar.className = 'progress-bar bg-warning';
+            document.getElementById('manipulation-status').textContent = '中等庄家操纵迹象';
+            document.getElementById('manipulation-status').className = 'text-warning';
+        } else if (manipulationScore >= 30) {
+            scoreBar.className = 'progress-bar bg-info';
+            document.getElementById('manipulation-status').textContent = '轻微庄家操纵迹象';
+            document.getElementById('manipulation-status').className = 'text-info';
+        } else {
+            scoreBar.className = 'progress-bar bg-success';
+            document.getElementById('manipulation-status').textContent = '无明显庄家痕迹';
+            document.getElementById('manipulation-status').className = 'text-muted';
+        }
+
+        // 更新分项评分
+        document.getElementById('volume-anomaly-score').textContent = `${Math.round(data.smart_money_analysis.volume_anomaly_score || 0)}/100`;
+        document.getElementById('price-manipulation-score').textContent = `${Math.round(data.smart_money_analysis.price_manipulation_score || 0)}/100`;
+        document.getElementById('big-order-score').textContent = `${Math.round(data.smart_money_analysis.big_order_score || 0)}/100`;
+        document.getElementById('fund-flow-score').textContent = `${Math.round(data.smart_money_analysis.fund_flow_score || 0)}/100`;
+
+        // 渲染技术指标图表
+        if (data.technical_indicators && data.technical_indicators.length > 0) {
+            renderTechnicalIndicators(data.technical_indicators);
+        }
+
+        // 渲染订单簿
+        if (data.order_book) {
+            renderOrderBook(data.order_book);
+        }
+    }
+
+    // 绘制价格图表
+    function renderPriceChart(data) {
+        // 这里应该使用图表库绘制价格图表
+        // 例如使用Plotly或者ApexCharts等
+
+        // 示例：使用简单的Canvas绘制
+        const canvas = document.createElement('canvas');
+        canvas.width = document.getElementById('price-chart').clientWidth;
+        canvas.height = 400;
+
+        document.getElementById('price-chart').innerHTML = '';
+        document.getElementById('price-chart').appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+
+        // 绘制简单的价格曲线
+        ctx.beginPath();
+        ctx.strokeStyle = '#3498db';
+        ctx.lineWidth = 2;
+
+        const prices = data.prices || Array(30).fill(0).map((_, i) => data.current_price * (1 + Math.sin(i / 5) * 0.05));
+        const max = Math.max(...prices) * 1.05;
+        const min = Math.min(...prices) * 0.95;
+        const range = max - min;
+
+        prices.forEach((price, i) => {
+            const x = i * (canvas.width / (prices.length - 1));
+            const y = canvas.height - ((price - min) / range * (canvas.height * 0.8) + (canvas.height * 0.1));
+
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+
+        ctx.stroke();
+
+        // 绘制价格标签
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#333';
+        ctx.fillText(formatCurrency(max), 5, 15);
+        ctx.fillText(formatCurrency(min), 5, canvas.height - 5);
+    }
+
+    // 渲染技术指标
+    function renderTechnicalIndicators(indicators) {
+        // 这里应该使用图表库绘制技术指标
+        console.log("渲染技术指标:", indicators);
+    }
+
+    // 渲染订单簿
+    function renderOrderBook(orderBook) {
+        // 这里应该绘制订单簿深度图
+        console.log("渲染订单簿:", orderBook);
+    }
+
+    // 格式化货币
+    function formatCurrency(value) {
+        if (!value) return '$0';
+
+        if (value >= 1000000000) {
+            return '$' + (value / 1000000000).toFixed(2) + 'B';
+        } else if (value >= 1000000) {
+            return '$' + (value / 1000000).toFixed(2) + 'M';
+        } else if (value >= 1000) {
+            return '$' + (value / 1000).toFixed(2) + 'K';
+        } else if (value >= 1) {
+            return '$' + value.toFixed(2);
+        } else {
+            return '$' + value.toFixed(8);
+        }
+    }
+
+    // 格式化百分比
+    function formatPercent(value) {
+        if (!value) return '0.00%';
+        return (value >= 0 ? '+' : '') + value.toFixed(2) + '%';
+    }
+
+    // 格式化数字
+    function formatNumber(value) {
+        if (!value) return '0';
+
+        if (value >= 1000000000) {
+            return (value / 1000000000).toFixed(2) + 'B';
+        } else if (value >= 1000000) {
+            return (value / 1000000).toFixed(2) + 'M';
+        } else if (value >= 1000) {
+            return (value / 1000).toFixed(2) + 'K';
+        } else {
+            return value.toFixed(0);
+        }
+    }
+
+    // 格式化时间
+    function formatTimeAgo(timestamp) {
+        const now = new Date();
+        const time = new Date(timestamp);
+        const diff = Math.floor((now - time) / 1000);
+
+        if (diff < 60) {
+            return `${diff}秒前`;
+        } else if (diff < 3600) {
+            return `${Math.floor(diff / 60)}分钟前`;
+        } else if (diff < 86400) {
+            return `${Math.floor(diff / 3600)}小时前`;
+        } else {
+            return `${Math.floor(diff / 86400)}天前`;
+        }
+    }
+
+    // 获取模拟币种列表 - 确保包含8个主要币种
+    function getMockCryptoList() {
+        return [
+            {
+                symbol: 'btc',
+                name: 'Bitcoin',
+                image: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@bea1507ee8/128/color/btc.png',
+                current_price: 103121.00,
+                price_change_24h: 0.17,
+                market_cap: 22106850000000,
+                total_volume: 2080000000,
+                manipulation_score: 52
+            },
+            {
+                symbol: 'eth',
+                name: 'Ethereum',
+                image: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@bea1507ee8/128/color/eth.png',
+                current_price: 2471.18,
+                price_change_24h: -0.11,
+                market_cap: 449990000000,
+                total_volume: 72980000,
+                manipulation_score: 32
+            },
+            {
+                symbol: 'bnb',
+                name: 'Binance Coin',
+                image: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@bea1507ee8/128/color/bnb.png',
+                current_price: 639.87,
+                price_change_24h: -0.07,
+                market_cap: 10660000000,
+                total_volume: 25960000,
+                manipulation_score: 58
+            },
+            {
+                symbol: 'sol',
+                name: 'Solana',
+                image: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@bea1507ee8/128/color/sol.png',
+                current_price: 165.22,
+                price_change_24h: -1.33,
+                market_cap: 4180000000,
+                total_volume: 151070000,
+                manipulation_score: 33
+            },
+            {
+                symbol: 'dot',
+                name: 'Polkadot',
+                image: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@bea1507ee8/128/color/dot.png',
+                current_price: 4.6008,
+                price_change_24h: -1.28,
+                market_cap: 115690000,
+                total_volume: 5360000,
+                manipulation_score: 37
+            },
+            {
+                symbol: 'xrp',
+                name: 'XRP',
+                image: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@bea1507ee8/128/color/xrp.png',
+                current_price: 2.3333,
+                price_change_24h: -0.00,
+                market_cap: 88790000,
+                total_volume: 16150000,
+                manipulation_score: 62
+            },
+            {
+                symbol: 'ada',
+                name: 'Cardano',
+                image: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@bea1507ee8/128/color/ada.png',
+                current_price: 0.735215,
+                price_change_24h: -2.03,
+                market_cap: 23330000,
+                total_volume: 42060000,
+                manipulation_score: 67
+            },
+            {
+                symbol: 'doge',
+                name: 'Dogecoin',
+                image: 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@bea1507ee8/128/color/doge.png',
+                current_price: 0.214080,
+                price_change_24h: -0.46,
+                market_cap: 1100000,
+                total_volume: 23660000,
+                manipulation_score: 59
+            }
+        ];
+    }
+
+    // 获取模拟币种详情
+    function getMockCryptoDetail(symbol) {
+        const mockList = getMockCryptoList();
+        const crypto = mockList.find(item => item.symbol === symbol) || {
+            symbol: symbol,
+            name: symbol.toUpperCase(),
+            current_price: 100,
+            price_change_24h: 2,
+            market_cap: 1000000000,
+            total_volume: 50000000,
+            circulating_supply: 10000000
+        };
+
+        return {
+            ...crypto,
+            circulating_supply: crypto.market_cap / crypto.current_price,
+            max_supply: crypto.market_cap / crypto.current_price * 1.5,
+            ath: crypto.current_price * 1.5,
+            ath_date: '2021-11-10T14:24:11.849Z',
+            atl: crypto.current_price * 0.1,
+            atl_date: '2020-03-13T02:35:41.277Z',
+            prices: Array(30).fill(0).map((_, i) => crypto.current_price * (1 + Math.sin(i / 5) * 0.05))
+        };
+    }
+</script>
+{% endblock %}

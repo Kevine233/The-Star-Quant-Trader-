@@ -1,0 +1,79 @@
+{
+    "version": "1.0.0",
+    "api_config": {
+        "crypto": {
+            "default_provider": "huobi",
+            "use_public_api": true,
+            "api_key": "",
+            "api_secret": "",
+            "request_timeout": 30,
+            "retry_count": 5,
+            "retry_delay": 2
+        },
+        "stock": {
+            "default_provider": "akshare",
+            "api_key": ""
+        }
+    },
+    "system_config": {
+        "use_proxy": true,
+        "proxy": {
+            "http": "http://127.0.0.1:7890",
+            "https": "http://127.0.0.1:7890"
+        }
+    },
+    "host": "0.0.0.0",
+    "port": 5000,
+    "debug": false,
+    "data_source": {
+        "stock": {
+            "default_provider": "akshare",
+            "api_key": ""
+        },
+        "crypto": {
+            "default_provider": "huobi",
+            "api_source": "huobi",
+            "available_sources": ["gateio", "huobi", "okex", "binance"],
+            "api_key": "",
+            "api_secret": "",
+            "use_proxy": true,
+            "proxy": {
+                "http": "http://127.0.0.1:7890",
+                "https": "http://127.0.0.1:7890"
+            },
+            "request_timeout": 30,
+            "retry_count": 5,
+            "retry_delay": 2,
+            "alternative_apis": {
+                "coin_market_cap": "https://api.coinmarketcap.cn/",
+                "my_token": "https://api.mytokenapi.com/",
+                "feixiaohao": "https://dncapi.feixiaohao.com/"
+            }
+        }
+    },
+    "backtest": {
+        "default_initial_capital": 1000000,
+        "default_commission_rate": 0.0003,
+        "default_slippage": 0.0001
+    },
+    "trade": {
+        "default_mode": "simulated",
+        "broker_api": {
+            "name": "",
+            "api_key": "",
+            "api_secret": "",
+            "api_base_url": ""
+        }
+    },
+    "risk_management": {
+        "max_position_size": 0.2,
+        "max_total_position": 0.8,
+        "stop_loss_pct": 0.05,
+        "take_profit_pct": 0.1
+    },
+    "optimization": {
+        "max_workers": 4,
+        "timeout": 3600,
+        "default_method": "grid_search"
+    }
+}

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}策略参数配置 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">策略参数配置</h2>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>庄家行为识别策略参数</h5>
+                </div>
+                <div class="card-body">
+                    <form id="strategyParamsForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6>交易量分析参数</h6>
+                                <div class="mb-3">
+                                    <label for="volume_window" class="form-label">交易量分析窗口</label>
+                                    <input type="number" class="form-control" id="volume_window" name="volume_window" value="20">
+                                    <div class="form-text">用于计算交易量均值和标准差的时间窗口(天)</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="volume_threshold" class="form-label">异常交易量阈值(Z分数)</label>
+                                    <input type="number" step="0.1" class="form-control" id="volume_threshold" name="volume_threshold" value="2.5">
+                                    <div class="form-text">超过该Z分数被视为异常交易量</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="min_volume_increase" class="form-label">最小交易量增幅(%)</label>
+                                    <input type="number" step="10" class="form-control" id="min_volume_increase" name="min_volume_increase" value="100">
+                                    <div class="form-text">相对于均值的最小增幅百分比</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6>价格模式参数</h6>
+                                <div class="mb-3">
+                                    <label for="price_window" class="form-label">价格分析窗口</label>
+                                    <input type="number" class="form-control" id="price_window" name="price_window" value="14">
+                                    <div class="form-text">用于分析价格模式的时间窗口(天)</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="volatility_window" class="form-label">波动率计算窗口</label>
+                                    <input type="number" class="form-control" id="volatility_window" name="volatility_window" value="10">
+                                    <div class="form-text">用于计算价格波动率的时间窗口(天)</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="price_threshold" class="form-label">价格异常阈值(%)</label>
+                                    <input type="number" step="0.1" class="form-control" id="price_threshold" name="price_threshold" value="5.0">
+                                    <div class="form-text">超过该百分比的价格变动被视为异常</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6>资金流向分析参数</h6>
+                                <div class="mb-3">
+                                    <label for="flow_window" class="form-label">资金流分析窗口</label>
+                                    <input type="number" class="form-control" id="flow_window" name="flow_window" value="5">
+                                    <div class="form-text">用于分析资金流向的时间窗口(天)</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="large_order_threshold" class="form-label">大单阈值(CNY)</label>
+                                    <input type="number" step="10000" class="form-control" id="large_order_threshold" name="large_order_threshold" value="500000">
+                                    <div class="form-text">超过该金额的单笔交易被视为大单</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6>综合评分系统</h6>
+                                <div class="mb-3">
+                                    <label for="volume_weight" class="form-label">交易量权重</label>
+                                    <input type="number" step="0.1" class="form-control" id="volume_weight" name="volume_weight" value="0.3">
+                                    <div class="form-text">交易量因素在综合评分中的权重</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="price_weight" class="form-label">价格模式权重</label>
+                                    <input type="number" step="0.1" class="form-control" id="price_weight" name="price_weight" value="0.3">
+                                    <div class="form-text">价格模式因素在综合评分中的权重</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="flow_weight" class="form-label">资金流向权重</label>
+                                    <input type="number" step="0.1" class="form-control" id="flow_weight" name="flow_weight" value="0.4">
+                                    <div class="form-text">资金流向因素在综合评分中的权重</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h6>信号生成参数</h6>
+                                <div class="mb-3">
+                                    <label for="signal_threshold" class="form-label">信号触发阈值</label>
+                                    <input type="number" step="0.1" class="form-control" id="signal_threshold" name="signal_threshold" value="7.5">
+                                    <div class="form-text">综合评分超过该阈值将生成交易信号(满分10分)</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="confirmation_days" class="form-label">信号确认天数</label>
+                                    <input type="number" class="form-control" id="confirmation_days" name="confirmation_days" value="2">
+                                    <div class="form-text">需要连续多少天满足条件才确认信号</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">保存参数设置</button>
+                            <button type="button" class="btn btn-secondary ms-2" id="resetDefaults">恢复默认设置</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // 表单提交处理
+        $('#strategyParamsForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {};
+            $(this).serializeArray().forEach(item => {
+                formData[item.name] = isNaN(parseFloat(item.value)) ? item.value : parseFloat(item.value);
+            });
+            
+            // 发送参数到后端
+            $.ajax({
+                url: '/api/strategy/update_parameters',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if(response.success) {
+                        alert('参数设置已保存');
+                    } else {
+                        alert('保存参数失败: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('保存参数失败，请检查网络连接');
+                }
+            });
+        });
+        
+        // 恢复默认设置
+        $('#resetDefaults').on('click', function() {
+            if(confirm('确定要恢复所有参数到默认设置吗？')) {
+                // 重置表单到默认值
+                $('#volume_window').val(20);
+                $('#volume_threshold').val(2.5);
+                $('#min_volume_increase').val(100);
+                $('#price_window').val(14);
+                $('#volatility_window').val(10);
+                $('#price_threshold').val(5.0);
+                $('#flow_window').val(5);
+                $('#large_order_threshold').val(500000);
+                $('#volume_weight').val(0.3);
+                $('#price_weight').val(0.3);
+                $('#flow_weight').val(0.4);
+                $('#signal_threshold').val(7.5);
+                $('#confirmation_days').val(2);
+            }
+        });
+        
+        // 加载当前参数
+        $.ajax({
+            url: '/api/strategy/get_parameters',
+            type: 'GET',
+            success: function(response) {
+                if(response.success && response.parameters) {
+                    const params = response.parameters;
+                    Object.keys(params).forEach(key => {
+                        $(`#${key}`).val(params[key]);
+                    });
+                }
+            }
+        });
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,2014 @@
+{% extends "base.html" %}
+{% block title %}股票市场 - 跟随庄家自动交易系统{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<style>
+    .chart-container {
+        height: 500px;
+        margin-bottom: 20px;
+    }
+    .analysis-card {
+        height: 100%;
+        margin-bottom: 15px;
+    }
+    .signal-buy {
+        color: #28a745;
+        font-weight: bold;
+    }
+    .signal-sell {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .signal-hold {
+        color: #ffc107;
+        font-weight: bold;
+    }
+    .score-high {
+        background-color: #d4edda;
+    }
+    .score-medium {
+        background-color: #fff3cd;
+    }
+    .score-low {
+        background-color: #f8d7da;
+    }
+    .loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+    }
+    .smart-money-indicator {
+        height: 120px;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- 页面标题 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="mb-0"><i class="fas fa-chart-line mr-2"></i>股票市场监控</h1>
+            <p class="text-muted">实时监控股票市场动态，识别庄家行为，把握市场机会</p>
+        </div>
+    </div>
+
+    <!-- 股票搜索面板 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-search mr-2"></i>股票检索</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="stockSearch">股票代码或名称</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="stockSearch" placeholder="输入股票代码或名称...">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="button" id="searchButton">
+                                    <i class="fas fa-search"></i> 搜索
+                                </button>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">例如：000001 或 平安银行</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="stockSelect">选择股票</label>
+                        <select class="form-control selectpicker" id="stockSelect" data-live-search="true">
+                            <option value="">请先搜索股票</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="dateRange">日期范围</label>
+                        <input type="text" class="form-control" id="dateRange">
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-12 text-right">
+                    <button type="button" class="btn btn-success" id="analyzeButton">
+                        <i class="fas fa-chart-bar mr-1"></i> 分析
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载指示器 -->
+    <div class="loading" id="loadingIndicator">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="sr-only">加载中...</span>
+        </div>
+    </div>
+
+    <!-- 分析结果区域 -->
+    <div id="analysisResults" style="display: none;">
+        <!-- 股票基本信息 -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-info-circle mr-2"></i>股票信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h2 id="stockName">--</h2>
+                                <h5 id="stockCode">--</h5>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <h2 id="currentPrice">--</h2>
+                                <h5 id="priceChange">--</h5>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-6 col-md-3">
+                                <p class="mb-1 text-muted">开盘</p>
+                                <h5 id="openPrice">--</h5>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <p class="mb-1 text-muted">最高</p>
+                                <h5 id="highPrice">--</h5>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <p class="mb-1 text-muted">最低</p>
+                                <h5 id="lowPrice">--</h5>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <p class="mb-1 text-muted">成交量</p>
+                                <h5 id="volume">--</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-warning text-white">
+                        <h5 class="mb-0"><i class="fas fa-exclamation-triangle mr-2"></i>庄家行为分析概要</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="alert" id="manipulationAlert">
+                                    <h4 id="manipulationProbability">--</h4>
+                                    <p id="manipulationDirection">--</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="progress mb-3" style="height: 30px;">
+                                    <div id="manipulationScoreBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                </div>
+                                <p id="manipulationRecommendation" class="mb-0">--</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表和分析 -->
+        <div class="row">
+            <!-- 左侧 - K线图和成交量 -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-line mr-2"></i>K线图</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="klineChart" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧 - 庄家行为分析 -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="fas fa-user-secret mr-2"></i>庄家行为指标</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <strong>操纵评分:</strong> <span id="manipulationScore">--</span>
+                        </div>
+
+                        <div id="volumeAnomalyIndicator" class="smart-money-indicator mb-3">
+                            <h6>成交量异常指标</h6>
+                            <div class="progress" style="height: 25px;">
+                                <div id="volumeAnomalyBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                            </div>
+                            <small id="volumeAnomalyDesc" class="text-muted">--</small>
+                        </div>
+
+                        <div id="priceManipulationIndicator" class="smart-money-indicator mb-3">
+                            <h6>价格操纵指标</h6>
+                            <div class="progress" style="height: 25px;">
+                                <div id="priceManipulationBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                            </div>
+                            <small id="priceManipulationDesc" class="text-muted">--</small>
+                        </div>
+
+                        <div id="bigOrderIndicator" class="smart-money-indicator mb-3">
+                            <h6>大单交易指标</h6>
+                            <div class="progress" style="height: 25px;">
+                                <div id="bigOrderBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                            </div>
+                            <small id="bigOrderDesc" class="text-muted">--</small>
+                        </div>
+
+                        <div id="fundFlowIndicator" class="smart-money-indicator">
+                            <h6>资金流向指标</h6>
+                            <div class="progress" style="height: 25px;">
+                                <div id="fundFlowBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                            </div>
+                            <small id="fundFlowDesc" class="text-muted">--</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 技术指标和交易信号 -->
+        <div class="row">
+            <!-- 左侧 - 技术指标 -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-bar mr-2"></i>技术指标</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="techIndicatorTabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="price-tab" data-toggle="tab" href="#priceIndicators" role="tab">
+                                    价格指标
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="volume-tab" data-toggle="tab" href="#volumeIndicators" role="tab">
+                                    量能指标
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="momentum-tab" data-toggle="tab" href="#momentumIndicators" role="tab">
+                                    动量指标
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="patterns-tab" data-toggle="tab" href="#patterns" role="tab">
+                                    形态识别
+                                </a>
+                            </li>
+                        </ul>
+                        <div class="tab-content p-3" id="techIndicatorContent">
+                            <div class="tab-pane fade show active" id="priceIndicators" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>指标</th>
+                                                    <th>值</th>
+                                                    <th>信号</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="priceIndicatorsTable">
+                                                <tr><td colspan="3" class="text-center">加载中...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div id="maChart" style="height: 250px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="volumeIndicators" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>指标</th>
+                                                    <th>值</th>
+                                                    <th>信号</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="volumeIndicatorsTable">
+                                                <tr><td colspan="3" class="text-center">加载中...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div id="volumeChart" style="height: 250px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="momentumIndicators" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>指标</th>
+                                                    <th>值</th>
+                                                    <th>信号</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="momentumIndicatorsTable">
+                                                <tr><td colspan="3" class="text-center">加载中...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div id="momentumChart" style="height: 250px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="patterns" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>形态</th>
+                                                    <th>识别结果</th>
+                                                    <th>可信度</th>
+                                                    <th>信号</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="patternsTable">
+                                                <tr><td colspan="4" class="text-center">加载中...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧 - 交易信号和建议 -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="fas fa-lightbulb mr-2"></i>交易信号</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert" id="tradingSignalAlert">
+                            <h4 id="tradingSignal">--</h4>
+                            <p id="signalReason">--</p>
+                        </div>
+
+                        <div id="tradingParameters">
+                            <h6>建议交易参数</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>参数</th>
+                                    <th>建议值</th>
+                                </tr>
+                                <tr>
+                                    <td>交易方向</td>
+                                    <td id="tradingDirection">--</td>
+                                </tr>
+                                <tr>
+                                    <td>入场价格</td>
+                                    <td id="entryPrice">--</td>
+                                </tr>
+                                <tr>
+                                    <td>止损价格</td>
+                                    <td id="stopLossPrice">--</td>
+                                </tr>
+                                <tr>
+                                    <td>止盈价格</td>
+                                    <td id="takeProfitPrice">--</td>
+                                </tr>
+                                <tr>
+                                    <td>风险收益比</td>
+                                    <td id="riskRewardRatio">--</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="button" class="btn btn-success btn-block" id="executeTradeBtn">
+                                <i class="fas fa-paper-plane mr-1"></i> 执行交易
+                            </button>
+                            <button type="button" class="btn btn-info btn-block mt-2" id="addToWatchlistBtn">
+                                <i class="fas fa-eye mr-1"></i> 添加到监控列表
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-block mt-2" id="backtestBtn">
+                                <i class="fas fa-history mr-1"></i> 回测此策略
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 相似股票推荐 -->
+    <div class="card mb-4" id="similarStocksSection" style="display: none;">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-exchange-alt mr-2"></i>相似股票推荐</h5>
+        </div>
+        <div class="card-body">
+            <div class="row" id="similarStocksContainer">
+                <!-- 相似股票将在这里动态加载 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 模态框 - 执行交易确认 -->
+<div class="modal fade" id="tradeConfirmModal" tabindex="-1" role="dialog" aria-labelledby="tradeConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tradeConfirmModalLabel">确认交易</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>您确定要执行以下交易吗？</p>
+                <table class="table table-sm">
+                    <tr>
+                        <td>标的</td>
+                        <td id="confirmStockCode">--</td>
+                    </tr>
+                    <tr>
+                        <td>方向</td>
+                        <td id="confirmDirection">--</td>
+                    </tr>
+                    <tr>
+                        <td>数量</td>
+                        <td>
+                            <input type="number" class="form-control" id="tradeQuantity" value="100">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>价格</td>
+                        <td id="confirmPrice">--</td>
+                    </tr>
+                    <tr>
+                        <td>金额</td>
+                        <td id="confirmAmount">--</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmTradeBtn">确认交易</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<script>
+// 页面初始化
+$(document).ready(function() {
+    // 初始化日期选择器
+    var start = moment().subtract(90, 'days');
+    var end = moment();
+
+    $('#dateRange').daterangepicker({
+        startDate: start,
+        endDate: end,
+        locale: {
+            format: 'YYYY-MM-DD',
+            applyLabel: '确定',
+            cancelLabel: '取消',
+            fromLabel: '从',
+            toLabel: '至',
+            customRangeLabel: '自定义',
+            weekLabel: '周',
+            daysOfWeek: ['日', '一', '二', '三', '四', '五', '六'],
+            monthNames: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+            firstDay: 1
+        },
+        ranges: {
+            '最近7天': [moment().subtract(6, 'days'), moment()],
+            '最近30天': [moment().subtract(29, 'days'), moment()],
+            '最近90天': [moment().subtract(89, 'days'), moment()],
+            '最近180天': [moment().subtract(179, 'days'), moment()],
+            '最近1年': [moment().subtract(364, 'days'), moment()],
+            '本月': [moment().startOf('month'), moment().endOf('month')],
+            '上月': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+        }
+    });
+
+    // 初始化下拉选择框
+    $('.selectpicker').selectpicker({
+        noneSelectedText: '请选择',
+        liveSearch: true,
+        showTick: true,
+        language: 'zh_CN'
+    });
+
+    // 搜索按钮点击事件
+    $('#searchButton').on('click', function() {
+        searchStocks();
+    });
+
+    // 回车键搜索
+    $('#stockSearch').on('keypress', function(e) {
+        if (e.which === 13) {
+            searchStocks();
+        }
+    });
+
+    // 分析按钮点击事件
+    $('#analyzeButton').on('click', function() {
+        analyzeStock();
+    });
+
+    // 股票选择变更事件
+    $('#stockSelect').on('change', function() {
+        if ($(this).val()) {
+            $('#analyzeButton').prop('disabled', false);
+        } else {
+            $('#analyzeButton').prop('disabled', true);
+        }
+    });
+
+    // 执行交易按钮点击事件
+    $('#executeTradeBtn').on('click', function() {
+        showTradeConfirmDialog();
+    });
+
+    // 确认交易按钮点击事件
+    $('#confirmTradeBtn').on('click', function() {
+        executeTrade();
+    });
+
+    // 添加到监控列表按钮点击事件
+    $('#addToWatchlistBtn').on('click', function() {
+        addToWatchlist();
+    });
+
+    // 回测按钮点击事件
+    $('#backtestBtn').on('click', function() {
+        backtestStrategy();
+    });
+
+    // 交易数量变化事件
+    $('#tradeQuantity').on('change', function() {
+        updateTradeAmount();
+    });
+
+    // 初始禁用分析按钮
+    $('#analyzeButton').prop('disabled', true);
+});
+
+// 搜索股票
+function searchStocks() {
+    var keyword = $('#stockSearch').val().trim();
+    if (!keyword) {
+        showMessage('请输入股票代码或名称', 'warning');
+        return;
+    }
+
+    showLoading(true);
+
+    $.ajax({
+        url: '/api/stock/search',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ keyword: keyword }),
+        success: function(response) {
+            showLoading(false);
+
+            if (response.success && response.data && response.data.length > 0) {
+                updateStockList(response.data);
+            } else {
+                showMessage('未找到符合条件的股票', 'warning');
+                $('#stockSelect').empty().append('<option value="">未找到股票</option>');
+                $('.selectpicker').selectpicker('refresh');
+            }
+        },
+        error: function(error) {
+            showLoading(false);
+            showMessage('搜索股票时发生错误', 'error');
+            console.error('搜索股票时发生错误:', error);
+        }
+    });
+}
+
+// 更新股票列表
+function updateStockList(stocks) {
+    var select = $('#stockSelect');
+    select.empty();
+
+    if (stocks.length === 0) {
+        select.append('<option value="">未找到股票</option>');
+    } else {
+        $.each(stocks, function(index, stock) {
+            select.append('<option value="' + stock.stock_code + '">' + stock.stock_code + ' - ' + stock.stock_name + '</option>');
+        });
+    }
+
+    $('.selectpicker').selectpicker('refresh');
+    $('#analyzeButton').prop('disabled', false);
+}
+
+// 分析股票
+function analyzeStock() {
+    var stockCode = $('#stockSelect').val();
+    if (!stockCode) {
+        showMessage('请先选择一只股票', 'warning');
+        return;
+    }
+
+    var dateRange = $('#dateRange').val().split(' - ');
+    var startDate = dateRange[0];
+    var endDate = dateRange[1];
+
+    showLoading(true);
+
+    // 1. 获取股票数据
+    $.ajax({
+        url: '/api/stock/data',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            stock_code: stockCode,
+            start_date: startDate,
+            end_date: endDate
+        }),
+        success: function(response) {
+            if (response.success && response.data) {
+                // 股票数据获取成功，继续分析
+                analyzeStockWithData(stockCode, startDate, endDate, response.data);
+            } else {
+                showLoading(false);
+                showMessage('获取股票数据失败', 'error');
+            }
+        },
+        error: function(error) {
+            showLoading(false);
+            showMessage('获取股票数据时发生错误', 'error');
+            console.error('获取股票数据时发生错误:', error);
+        }
+    });
+}
+
+// 使用股票数据进行分析
+function analyzeStockWithData(stockCode, startDate, endDate, stockData) {
+    // 2. 进行股票分析
+    $.ajax({
+        url: '/api/stock/analysis',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            stock_code: stockCode,
+            start_date: startDate,
+            end_date: endDate
+        }),
+        success: function(response) {
+            showLoading(false);
+
+            if (response.success && response.data) {
+                // 显示分析结果
+                $('#analysisResults').show();
+
+                // 更新页面数据
+                updateStockInfo(stockCode, stockData);
+                updateSmartMoneyAnalysis(response.data.smart_money_analysis);
+                updateTechnicalIndicators(response.data.technical_indicators);
+                drawCharts(stockData);
+
+                // 显示相似股票推荐
+                $('#similarStocksSection').show();
+
+                // 滚动到分析结果
+                $('html, body').animate({
+                    scrollTop: $('#analysisResults').offset().top - 20
+                }, 500);
+            } else {
+                showMessage('分析股票数据失败', 'error');
+            }
+        },
+        error: function(error) {
+            showLoading(false);
+            showMessage('分析股票时发生错误', 'error');
+            console.error('分析股票时发生错误:', error);
+        }
+    });
+}
+
+// 更新股票基本信息
+function updateStockInfo(stockCode, stockData) {
+    if (stockData && stockData.length > 0) {
+        var latestData = stockData[stockData.length - 1];
+        var previousData = stockData.length > 1 ? stockData[stockData.length - 2] : null;
+
+        // 获取股票名称
+        var stockNameEl = $('#stockSelect option:selected').text();
+        var stockName = stockNameEl.split(' - ')[1] || '未知名称';
+
+        // 更新基本信息
+        $('#stockName').text(stockName);
+        $('#stockCode').text(stockCode);
+
+        if (latestData) {
+            $('#currentPrice').text(latestData['收盘'].toFixed(2));
+            $('#openPrice').text(latestData['开盘'].toFixed(2));
+            $('#highPrice').text(latestData['最高'].toFixed(2));
+            $('#lowPrice').text(latestData['最低'].toFixed(2));
+            $('#volume').text(formatNumber(latestData['成交量']));
+
+            // 计算价格变化
+            if (previousData) {
+                var priceChange = latestData['收盘'] - previousData['收盘'];
+                var priceChangePercent = (priceChange / previousData['收盘']) * 100;
+
+                var priceChangeText = priceChange.toFixed(2) + ' (' + priceChangePercent.toFixed(2) + '%)';
+                var priceChangeClass = priceChange >= 0 ? 'text-success' : 'text-danger';
+
+                $('#priceChange').text(priceChangeText).removeClass('text-success text-danger').addClass(priceChangeClass);
+            } else {
+                $('#priceChange').text('0.00 (0.00%)');
+            }
+        }
+    }
+}
+
+// 更新庄家行为分析
+function updateSmartMoneyAnalysis(analysis) {
+    if (!analysis) return;
+
+    // 操纵评分
+    var score = analysis.manipulation_score || 0;
+    $('#manipulationScore').text(score.toFixed(2));
+    $('#manipulationScoreBar').css('width', score + '%').text(score.toFixed(2) + '%');
+
+    // 根据评分设置不同颜色
+    var scoreBarColor = 'bg-success';
+    if (score > 70) {
+        scoreBarColor = 'bg-danger';
+    } else if (score > 50) {
+        scoreBarColor = 'bg-warning';
+    }
+    $('#manipulationScoreBar').removeClass('bg-success bg-warning bg-danger').addClass(scoreBarColor);
+
+    // 操纵可能性
+    var probability = analysis.manipulation_probability || 'low';
+    var probabilityText = '';
+    var alertClass = 'alert-info';
+
+    switch(probability) {
+        case 'high':
+            probabilityText = '高操纵可能性';
+            alertClass = 'alert-danger';
+            break;
+        case 'medium':
+            probabilityText = '中等操纵可能性';
+            alertClass = 'alert-warning';
+            break;
+        case 'low':
+            probabilityText = '低操纵可能性';
+            alertClass = 'alert-success';
+            break;
+        default:
+            probabilityText = '未知操纵可能性';
+            alertClass = 'alert-info';
+    }
+
+    $('#manipulationProbability').text(probabilityText);
+    $('#manipulationAlert').removeClass('alert-success alert-warning alert-danger alert-info').addClass(alertClass);
+
+    // 操纵方向
+    var direction = analysis.manipulation_direction || 0;
+    var directionText = '';
+
+    if (direction > 0) {
+        directionText = '方向：看涨（庄家可能正在拉升）';
+    } else if (direction < 0) {
+        directionText = '方向：看跌（庄家可能正在出货）';
+    } else {
+        directionText = '方向：中性（无明显方向）';
+    }
+
+    $('#manipulationDirection').text(directionText);
+
+    // 建议
+    var recommendation = '';
+    if (probability === 'high') {
+        if (direction > 0) {
+            recommendation = '强烈建议跟随：庄家可能正在拉升，可考虑买入';
+            $('#tradingSignal').text('买入信号').removeClass('text-danger text-warning').addClass('text-success');
+            $('#tradingSignalAlert').removeClass('alert-danger alert-warning alert-info').addClass('alert-success');
+            $('#tradingDirection').text('买入');
+        } else if (direction < 0) {
+            recommendation = '注意风险：庄家可能正在出货，建议减仓或观望';
+            $('#tradingSignal').text('卖出信号').removeClass('text-success text-warning').addClass('text-danger');
+            $('#tradingSignalAlert').removeClass('alert-success alert-warning alert-info').addClass('alert-danger');
+            $('#tradingDirection').text('卖出');
+        } else {
+            recommendation = '保持关注：有明显庄家活动，但方向不明确';
+            $('#tradingSignal').text('观望信号').removeClass('text-success text-danger').addClass('text-warning');
+            $('#tradingSignalAlert').removeClass('alert-success alert-danger alert-info').addClass('alert-warning');
+            $('#tradingDirection').text('观望');
+        }
+    } else if (probability === 'medium') {
+        if (direction > 0) {
+            recommendation = '谨慎买入：有一定庄家活动迹象，方向偏多';
+            $('#tradingSignal').text('谨慎买入信号').removeClass('text-danger text-warning').addClass('text-success');
+            $('#tradingSignalAlert').removeClass('alert-danger alert-warning alert-info').addClass('alert-success');
+            $('#tradingDirection').text('谨慎买入');
+        } else if (direction < 0) {
+            recommendation = '谨慎观望：有一定庄家活动迹象，方向偏空';
+            $('#tradingSignal').text('谨慎卖出信号').removeClass('text-success text-warning').addClass('text-danger');
+            $('#tradingSignalAlert').removeClass('alert-success alert-warning alert-info').addClass('alert-danger');
+            $('#tradingDirection').text('谨慎卖出');
+        } else {
+            recommendation = '继续观察：有一定庄家活动迹象，但方向不明确';
+            $('#tradingSignal').text('观望信号').removeClass('text-success text-danger').addClass('text-warning');
+            $('#tradingSignalAlert').removeClass('alert-success alert-danger alert-info').addClass('alert-warning');
+            $('#tradingDirection').text('观望');
+        }
+    } else {
+        recommendation = '自主决策：无明显庄家活动迹象';
+        $('#tradingSignal').text('无信号').removeClass('text-success text-danger text-warning');
+        $('#tradingSignalAlert').removeClass('alert-success alert-danger alert-warning').addClass('alert-info');
+        $('#tradingDirection').text('--');
+    }
+
+    $('#manipulationRecommendation').text(recommendation);
+    $('#signalReason').text(recommendation);
+
+    // 更新具体指标
+    updateSmartMoneyIndicators(analysis);
+
+    // 更新交易参数
+    updateTradingParameters(analysis);
+}
+
+// 更新庄家行为指标
+function updateSmartMoneyIndicators(analysis) {
+    // 成交量异常指标
+    var volumeScore = Math.abs((analysis.volume_zscore || 0) * 25); // 缩放到0-100
+    volumeScore = Math.min(100, volumeScore);
+    $('#volumeAnomalyBar').css('width', volumeScore + '%').text(volumeScore.toFixed(0) + '%');
+
+    var volumeDesc = '';
+    if (analysis.volume_anomaly > 0) {
+        volumeDesc = '成交量异常增加，可能是主力资金进场信号';
+        $('#volumeAnomalyBar').removeClass('bg-danger bg-warning').addClass('bg-success');
+    } else if (analysis.volume_anomaly < 0) {
+        volumeDesc = '成交量异常减少，可能是主力资金撤离信号';
+        $('#volumeAnomalyBar').removeClass('bg-success bg-warning').addClass('bg-danger');
+    } else {
+        volumeDesc = '成交量正常，无明显异常';
+        $('#volumeAnomalyBar').removeClass('bg-success bg-danger').addClass('bg-warning');
+    }
+    $('#volumeAnomalyDesc').text(volumeDesc);
+
+    // 价格操纵指标
+    var priceScore = (analysis.price_manipulation_score || 0);
+    $('#priceManipulationBar').css('width', priceScore + '%').text(priceScore.toFixed(0) + '%');
+
+    var priceDesc = '';
+    if (priceScore > 70) {
+        priceDesc = '强烈的价格操纵迹象，可能存在拉升或打压行为';
+        $('#priceManipulationBar').removeClass('bg-warning bg-success').addClass('bg-danger');
+    } else if (priceScore > 50) {
+        priceDesc = '中等的价格操纵迹象，需要关注价格走势';
+        $('#priceManipulationBar').removeClass('bg-danger bg-success').addClass('bg-warning');
+    } else {
+        priceDesc = '价格走势正常，无明显操纵迹象';
+        $('#priceManipulationBar').removeClass('bg-danger bg-warning').addClass('bg-success');
+    }
+    $('#priceManipulationDesc').text(priceDesc);
+
+    // 大单交易指标
+    var bigOrderScore = Math.abs((analysis.big_order_anomaly || 0) * 50); // 缩放到0-100
+    bigOrderScore = Math.min(100, bigOrderScore);
+    $('#bigOrderBar').css('width', bigOrderScore + '%').text(bigOrderScore.toFixed(0) + '%');
+
+    var bigOrderDesc = '';
+    if (analysis.big_order_anomaly > 0) {
+        bigOrderDesc = '大单买入集中，机构可能在accumulate仓位';
+        $('#bigOrderBar').removeClass('bg-danger bg-warning').addClass('bg-success');
+    } else if (analysis.big_order_anomaly < 0) {
+        bigOrderDesc = '大单卖出集中，机构可能在减仓';
+        $('#bigOrderBar').removeClass('bg-success bg-warning').addClass('bg-danger');
+    } else {
+        bigOrderDesc = '大单交易正常，无明显异常';
+        $('#bigOrderBar').removeClass('bg-success bg-danger').addClass('bg-warning');
+    }
+    $('#bigOrderDesc').text(bigOrderDesc);
+
+    // 资金流向指标
+    var fundScore = (analysis.fund_flow_score || 50);
+    $('#fundFlowBar').css('width', fundScore + '%').text(fundScore.toFixed(0) + '%');
+
+    var fundDesc = '';
+    if (fundScore > 80) {
+        fundDesc = '资金强烈流入，市场情绪非常乐观';
+        $('#fundFlowBar').removeClass('bg-danger bg-warning').addClass('bg-success');
+    } else if (fundScore < 20) {
+        fundDesc = '资金强烈流出，市场情绪非常悲观';
+        $('#fundFlowBar').removeClass('bg-success bg-warning').addClass('bg-danger');
+    } else if (fundScore > 60) {
+        fundDesc = '资金轻微流入，市场情绪偏乐观';
+        $('#fundFlowBar').removeClass('bg-danger').addClass('bg-success');
+    } else if (fundScore < 40) {
+        fundDesc = '资金轻微流出，市场情绪偏悲观';
+        $('#fundFlowBar').removeClass('bg-success').addClass('bg-danger');
+    } else {
+        fundDesc = '资金流向平衡，市场情绪中性';
+        $('#fundFlowBar').removeClass('bg-success bg-danger').addClass('bg-warning');
+    }
+    $('#fundFlowDesc').text(fundDesc);
+}
+
+// 更新技术指标
+function updateTechnicalIndicators(indicators) {
+    if (!indicators) return;
+
+    // 清空现有指标
+    $('#priceIndicatorsTable').empty();
+    $('#volumeIndicatorsTable').empty();
+    $('#momentumIndicatorsTable').empty();
+    $('#patternsTable').empty();
+
+    // 处理价格指标
+    if (Array.isArray(indicators)) {
+        var priceIndicators = [];
+        var volumeIndicators = [];
+        var momentumIndicators = [];
+        var patterns = [];
+
+        // 分类指标
+        indicators.forEach(function(indicator) {
+            var type = indicator.indicator_type || '';
+
+            if (type.includes('price') || type.includes('ma') || type.includes('bollinger')) {
+                priceIndicators.push(indicator);
+            } else if (type.includes('volume') || type.includes('obv') || type.includes('ad')) {
+                volumeIndicators.push(indicator);
+            } else if (type.includes('momentum') || type.includes('rsi') || type.includes('macd') || type.includes('stochastic')) {
+                momentumIndicators.push(indicator);
+            } else if (type.includes('pattern')) {
+                patterns.push(indicator);
+            }
+        });
+
+        // 更新价格指标表格
+        priceIndicators.forEach(function(indicator) {
+            addIndicatorToTable('#priceIndicatorsTable', indicator);
+        });
+
+        // 更新成交量指标表格
+        volumeIndicators.forEach(function(indicator) {
+            addIndicatorToTable('#volumeIndicatorsTable', indicator);
+        });
+
+        // 更新动量指标表格
+        momentumIndicators.forEach(function(indicator) {
+            addIndicatorToTable('#momentumIndicatorsTable', indicator);
+        });
+
+        // 更新形态识别表格
+        patterns.forEach(function(pattern) {
+            addPatternToTable('#patternsTable', pattern);
+        });
+    }
+
+    // 如果表格为空，添加提示信息
+    if ($('#priceIndicatorsTable').children().length === 0) {
+        $('#priceIndicatorsTable').html('<tr><td colspan="3" class="text-center">无价格指标数据</td></tr>');
+    }
+    if ($('#volumeIndicatorsTable').children().length === 0) {
+        $('#volumeIndicatorsTable').html('<tr><td colspan="3" class="text-center">无成交量指标数据</td></tr>');
+    }
+    if ($('#momentumIndicatorsTable').children().length === 0) {
+        $('#momentumIndicatorsTable').html('<tr><td colspan="3" class="text-center">无动量指标数据</td></tr>');
+    }
+    if ($('#patternsTable').children().length === 0) {
+        $('#patternsTable').html('<tr><td colspan="4" class="text-center">无形态识别数据</td></tr>');
+    }
+}
+
+// 向指标表格添加一行
+function addIndicatorToTable(tableSelector, indicator) {
+    var name = indicator.name || '';
+    var value = indicator.value !== undefined ? indicator.value : '--';
+    var signal = indicator.signal || '';
+
+    // 格式化值
+    if (typeof value === 'number') {
+        value = value.toFixed(2);
+    }
+
+    // 设置信号样式
+    var signalClass = '';
+    var signalIcon = '';
+
+    if (signal.toLowerCase().includes('buy')) {
+        signalClass = 'signal-buy';
+        signalIcon = '<i class="fas fa-arrow-up mr-1"></i>';
+    } else if (signal.toLowerCase().includes('sell')) {
+        signalClass = 'signal-sell';
+        signalIcon = '<i class="fas fa-arrow-down mr-1"></i>';
+    } else if (signal.toLowerCase().includes('hold') || signal.toLowerCase().includes('neutral')) {
+        signalClass = 'signal-hold';
+        signalIcon = '<i class="fas fa-minus mr-1"></i>';
+    }
+
+    var row = '<tr>' +
+              '<td>' + name + '</td>' +
+              '<td>' + value + '</td>' +
+              '<td class="' + signalClass + '">' + signalIcon + signal + '</td>' +
+              '</tr>';
+
+    $(tableSelector).append(row);
+}
+
+// 向形态表格添加一行
+function addPatternToTable(tableSelector, pattern) {
+    var name = pattern.name || '';
+    var result = pattern.result || '';
+    var confidence = pattern.confidence || 0;
+    var signal = pattern.signal || '';
+
+    // 格式化可信度
+    if (typeof confidence === 'number') {
+        confidence = (confidence * 100).toFixed(0) + '%';
+    }
+
+    // 设置信号样式
+    var signalClass = '';
+    var signalIcon = '';
+
+    if (signal.toLowerCase().includes('buy')) {
+        signalClass = 'signal-buy';
+        signalIcon = '<i class="fas fa-arrow-up mr-1"></i>';
+    } else if (signal.toLowerCase().includes('sell')) {
+        signalClass = 'signal-sell';
+        signalIcon = '<i class="fas fa-arrow-down mr-1"></i>';
+    } else if (signal.toLowerCase().includes('hold') || signal.toLowerCase().includes('neutral')) {
+        signalClass = 'signal-hold';
+        signalIcon = '<i class="fas fa-minus mr-1"></i>';
+    }
+
+    var row = '<tr>' +
+              '<td>' + name + '</td>' +
+              '<td>' + result + '</td>' +
+              '<td>' + confidence + '</td>' +
+              '<td class="' + signalClass + '">' + signalIcon + signal + '</td>' +
+              '</tr>';
+
+    $(tableSelector).append(row);
+}
+
+// 更新交易参数
+function updateTradingParameters(analysis) {
+    // 获取当前价格
+    var currentPrice = parseFloat($('#currentPrice').text()) || 0;
+
+    // 设置入场价格
+    $('#entryPrice').text(currentPrice.toFixed(2));
+    $('#confirmPrice').text(currentPrice.toFixed(2));
+
+    // 计算止损价格（默认为当前价格的5%）
+    var stopLossPercent = 0.05;
+    var stopLossPrice = currentPrice * (1 - stopLossPercent);
+    $('#stopLossPrice').text(stopLossPrice.toFixed(2));
+
+    // 计算止盈价格（默认为当前价格的10%）
+    var takeProfitPercent = 0.10;
+    var takeProfitPrice = currentPrice * (1 + takeProfitPercent);
+    $('#takeProfitPrice').text(takeProfitPrice.toFixed(2));
+
+    // 计算风险收益比
+    var riskAmount = currentPrice - stopLossPrice;
+    var rewardAmount = takeProfitPrice - currentPrice;
+    var riskRewardRatio = rewardAmount / riskAmount;
+    $('#riskRewardRatio').text(riskRewardRatio.toFixed(2));
+
+    // 更新交易确认对话框信息
+    $('#confirmStockCode').text($('#stockCode').text());
+
+    if ($('#tradingDirection').text().includes('买入')) {
+        $('#confirmDirection').text('买入');
+    } else if ($('#tradingDirection').text().includes('卖出')) {
+        $('#confirmDirection').text('卖出');
+    } else {
+        $('#confirmDirection').text('--');
+    }
+
+    // 更新交易金额
+    updateTradeAmount();
+}
+
+// 更新交易金额
+function updateTradeAmount() {
+    var quantity = parseInt($('#tradeQuantity').val()) || 0;
+    var price = parseFloat($('#confirmPrice').text()) || 0;
+    var amount = quantity * price;
+
+    $('#confirmAmount').text(amount.toFixed(2));
+}
+
+// 绘制图表
+function drawCharts(stockData) {
+    if (!stockData || stockData.length === 0) return;
+
+    // 1. 绘制K线图
+    drawKlineChart('klineChart', stockData);
+
+    // 2. 绘制移动平均线图
+    drawMAChart('maChart', stockData);
+
+    // 3. 绘制成交量图
+    drawVolumeChart('volumeChart', stockData);
+
+    // 4. 绘制动量指标图
+    drawMomentumChart('momentumChart', stockData);
+}
+
+// 绘制K线图
+function drawKlineChart(containerId, stockData) {
+    // 处理数据
+    var dates = [];
+    var values = [];
+
+    stockData.forEach(function(item) {
+        // 确保日期是字符串
+        var dateStr = '';
+        if (item['日期']) {
+            if (typeof item['日期'] === 'string') {
+                dateStr = item['日期'];
+            } else if (item['日期'] instanceof Date) {
+                dateStr = item['日期'].toISOString().split('T')[0];
+            } else {
+                dateStr = new Date(item['日期']).toISOString().split('T')[0];
+            }
+        } else {
+            dateStr = new Date().toISOString().split('T')[0];
+        }
+
+        dates.push(dateStr);
+        values.push([
+            item['开盘'] || 0,
+            item['收盘'] || 0,
+            item['最低'] || 0,
+            item['最高'] || 0
+        ]);
+    });
+
+    // 初始化图表
+    var chart = echarts.init(document.getElementById(containerId));
+
+    // 设置图表选项
+    var option = {
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'cross'
+            }
+        },
+        legend: {
+            data: ['K线', 'MA5', 'MA10', 'MA20', 'MA60']
+        },
+        grid: {
+            left: '3%',
+            right: '3%',
+            bottom: '15%'
+        },
+        xAxis: {
+            type: 'category',
+            data: dates,
+            scale: true,
+            boundaryGap: false,
+            axisLine: { onZero: false },
+            splitLine: { show: false },
+            splitNumber: 20,
+            min: 'dataMin',
+            max: 'dataMax'
+        },
+        yAxis: {
+            scale: true,
+            splitArea: {
+                show: true
+            }
+        },
+        dataZoom: [
+            {
+                type: 'inside',
+                start: 0,
+                end: 100
+            },
+            {
+                show: true,
+                type: 'slider',
+                top: '90%',
+                start: 0,
+                end: 100
+            }
+        ],
+        series: [
+            {
+                name: 'K线',
+                type: 'candlestick',
+                data: values,
+                itemStyle: {
+                    color: '#c23531',
+                    color0: '#314656',
+                    borderColor: '#c23531',
+                    borderColor0: '#314656'
+                }
+            }
+        ]
+    };
+
+    // 计算移动平均线
+    var ma5Data = calculateMA(5, stockData);
+    var ma10Data = calculateMA(10, stockData);
+    var ma20Data = calculateMA(20, stockData);
+    var ma60Data = calculateMA(60, stockData);
+
+    // 添加移动平均线
+    option.series.push({
+        name: 'MA5',
+        type: 'line',
+        data: ma5Data,
+        smooth: true,
+        lineStyle: {
+            opacity: 0.5
+        }
+    });
+
+    option.series.push({
+        name: 'MA10',
+        type: 'line',
+        data: ma10Data,
+        smooth: true,
+        lineStyle: {
+            opacity: 0.5
+        }
+    });
+
+    option.series.push({
+        name: 'MA20',
+        type: 'line',
+        data: ma20Data,
+        smooth: true,
+        lineStyle: {
+            opacity: 0.5
+        }
+    });
+
+    option.series.push({
+        name: 'MA60',
+        type: 'line',
+        data: ma60Data,
+        smooth: true,
+        lineStyle: {
+            opacity: 0.5
+        }
+    });
+
+    // 使用配置绘制图表
+    chart.setOption(option);
+
+    // 窗口大小变化时调整图表大小
+    window.addEventListener('resize', function() {
+        chart.resize();
+    });
+}
+
+// 绘制移动平均线图
+function drawMAChart(containerId, stockData) {
+    // 处理数据
+    var dates = [];
+    var closePrices = [];
+
+    stockData.forEach(function(item) {
+        // 确保日期是字符串
+        var dateStr = '';
+        if (item['日期']) {
+            if (typeof item['日期'] === 'string') {
+                dateStr = item['日期'];
+            } else if (item['日期'] instanceof Date) {
+                dateStr = item['日期'].toISOString().split('T')[0];
+            } else {
+                dateStr = new Date(item['日期']).toISOString().split('T')[0];
+            }
+        } else {
+            dateStr = new Date().toISOString().split('T')[0];
+        }
+
+        dates.push(dateStr);
+        closePrices.push(item['收盘'] || 0);
+    });
+
+    // 计算移动平均线
+    var ma5Data = calculateMA(5, stockData);
+    var ma10Data = calculateMA(10, stockData);
+    var ma20Data = calculateMA(20, stockData);
+    var ma60Data = calculateMA(60, stockData);
+
+    // 初始化图表
+    var chart = echarts.init(document.getElementById(containerId));
+
+    // 设置图表选项
+    var option = {
+        tooltip: {
+            trigger: 'axis'
+        },
+        legend: {
+            data: ['收盘价', 'MA5', 'MA10', 'MA20', 'MA60']
+        },
+        grid: {
+            left: '3%',
+            right: '3%',
+            bottom: '10%'
+        },
+        xAxis: {
+            type: 'category',
+            data: dates,
+            boundaryGap: false
+        },
+        yAxis: {
+            type: 'value',
+            scale: true
+        },
+        series: [
+            {
+                name: '收盘价',
+                type: 'line',
+                data: closePrices,
+                emphasis: {
+                    lineStyle: {
+                        width: 2
+                    }
+                },
+                symbol: 'none'
+            },
+            {
+                name: 'MA5',
+                type: 'line',
+                data: ma5Data,
+                emphasis: {
+                    lineStyle: {
+                        width: 2
+                    }
+                },
+                symbol: 'none'
+            },
+            {
+                name: 'MA10',
+                type: 'line',
+                data: ma10Data,
+                emphasis: {
+                    lineStyle: {
+                        width: 2
+                    }
+                },
+                symbol: 'none'
+            },
+            {
+                name: 'MA20',
+                type: 'line',
+                data: ma20Data,
+                emphasis: {
+                    lineStyle: {
+                        width: 2
+                    }
+                },
+                symbol: 'none'
+            },
+            {
+                name: 'MA60',
+                type: 'line',
+                data: ma60Data,
+                emphasis: {
+                    lineStyle: {
+                        width: 2
+                    }
+                },
+                symbol: 'none'
+            }
+        ]
+    };
+
+    // 使用配置绘制图表
+    chart.setOption(option);
+
+    // 窗口大小变化时调整图表大小
+    window.addEventListener('resize', function() {
+        chart.resize();
+    });
+}
+
+// 绘制成交量图
+function drawVolumeChart(containerId, stockData) {
+    // 处理数据
+    var dates = [];
+    var volumes = [];
+    var closePrices = [];
+
+    stockData.forEach(function(item, index) {
+        // 确保日期是字符串
+        var dateStr = '';
+        if (item['日期']) {
+            if (typeof item['日期'] === 'string') {
+                dateStr = item['日期'];
+            } else if (item['日期'] instanceof Date) {
+                dateStr = item['日期'].toISOString().split('T')[0];
+            } else {
+                dateStr = new Date(item['日期']).toISOString().split('T')[0];
+            }
+        } else {
+            dateStr = new Date().toISOString().split('T')[0];
+        }
+
+        dates.push(dateStr);
+        volumes.push(item['成交量'] || 0);
+        closePrices.push(item['收盘'] || 0);
+    });
+
+    // 计算成交量MA5和MA10
+    var volumeMA5 = calculateSimpleMA(5, volumes);
+    var volumeMA10 = calculateSimpleMA(10, volumes);
+
+    // 初始化图表
+    var chart = echarts.init(document.getElementById(containerId));
+
+    // 设置图表选项
+    var option = {
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'cross'
+            }
+        },
+        legend: {
+            data: ['成交量', '成交量MA5', '成交量MA10']
+        },
+        grid: {
+            left: '3%',
+            right: '3%',
+            bottom: '10%'
+        },
+        xAxis: {
+            type: 'category',
+            data: dates,
+            boundaryGap: true
+        },
+        yAxis: {
+            type: 'value',
+            name: '成交量'
+        },
+        series: [
+            {
+                name: '成交量',
+                type: 'bar',
+                data: volumes,
+                itemStyle: {
+                    color: function(params) {
+                        var index = params.dataIndex;
+                        if (index > 0) {
+                            return closePrices[index] >= closePrices[index - 1] ? '#c23531' : '#314656';
+                        } else {
+                            return '#c23531';
+                        }
+                    }
+                }
+            },
+            {
+                name: '成交量MA5',
+                type: 'line',
+                data: volumeMA5,
+                symbol: 'none',
+                smooth: true,
+                lineStyle: {
+                    width: 2,
+                    color: '#FF9800'
+                }
+            },
+            {
+                name: '成交量MA10',
+                type: 'line',
+                data: volumeMA10,
+                symbol: 'none',
+                smooth: true,
+                lineStyle: {
+                    width: 2,
+                    color: '#2196F3'
+                }
+            }
+        ]
+    };
+
+    // 使用配置绘制图表
+    chart.setOption(option);
+
+    // 窗口大小变化时调整图表大小
+    window.addEventListener('resize', function() {
+        chart.resize();
+    });
+}
+
+// 绘制动量指标图
+function drawMomentumChart(containerId, stockData) {
+    // 处理数据
+    var dates = [];
+    var rsiData = [];
+    var macdData = [];
+    var macdSignalData = [];
+    var macdHistData = [];
+
+    // 简单计算RSI (14天)
+    rsiData = calculateRSI(14, stockData);
+
+    // 简单计算MACD (12, 26, 9)
+    var macdResult = calculateMACD(12, 26, 9, stockData);
+    macdData = macdResult.macd;
+    macdSignalData = macdResult.signal;
+    macdHistData = macdResult.histogram;
+
+    stockData.forEach(function(item) {
+        // 确保日期是字符串
+        var dateStr = '';
+        if (item['日期']) {
+            if (typeof item['日期'] === 'string') {
+                dateStr = item['日期'];
+            } else if (item['日期'] instanceof Date) {
+                dateStr = item['日期'].toISOString().split('T')[0];
+            } else {
+                dateStr = new Date(item['日期']).toISOString().split('T')[0];
+            }
+        } else {
+            dateStr = new Date().toISOString().split('T')[0];
+        }
+
+        dates.push(dateStr);
+    });
+
+    // 初始化图表
+    var chart = echarts.init(document.getElementById(containerId));
+
+    // 设置图表选项
+    var option = {
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'cross'
+            }
+        },
+        legend: {
+            data: ['RSI', 'MACD', 'Signal', 'Histogram']
+        },
+        grid: [
+            {
+                left: '3%',
+                right: '3%',
+                height: '40%'
+            },
+            {
+                left: '3%',
+                right: '3%',
+                top: '55%',
+                height: '30%'
+            }
+        ],
+        xAxis: [
+            {
+                type: 'category',
+                data: dates,
+                boundaryGap: false,
+                axisLine: { onZero: false },
+                splitLine: { show: false },
+                min: 'dataMin',
+                max: 'dataMax',
+                gridIndex: 0
+            },
+            {
+                type: 'category',
+                data: dates,
+                boundaryGap: false,
+                axisLine: { onZero: false },
+                splitLine: { show: false },
+                min: 'dataMin',
+                max: 'dataMax',
+                gridIndex: 1
+            }
+        ],
+        yAxis: [
+            {
+                name: 'RSI',
+                scale: true,
+                gridIndex: 0,
+                splitNumber: 2,
+                axisLabel: { show: true },
+                axisLine: { show: true },
+                axisTick: { show: true },
+                splitLine: { show: true }
+            },
+            {
+                name: 'MACD',
+                gridIndex: 1,
+                splitNumber: 2,
+                axisLabel: { show: true },
+                axisLine: { show: true },
+                axisTick: { show: true },
+                splitLine: { show: true }
+            }
+        ],
+        series: [
+            {
+                name: 'RSI',
+                type: 'line',
+                data: rsiData,
+                symbol: 'none',
+                smooth: true,
+                lineStyle: {
+                    width: 2,
+                    color: '#8E24AA'
+                },
+                markLine: {
+                    symbol: 'none',
+                    data: [
+                        { yAxis: 30, lineStyle: { color: '#A5D6A7' } },
+                        { yAxis: 70, lineStyle: { color: '#EF9A9A' } }
+                    ]
+                },
+                xAxisIndex: 0,
+                yAxisIndex: 0
+            },
+            {
+                name: 'MACD',
+                type: 'line',
+                data: macdData,
+                symbol: 'none',
+                smooth: true,
+                lineStyle: {
+                    width: 2,
+                    color: '#4CAF50'
+                },
+                xAxisIndex: 1,
+                yAxisIndex: 1
+            },
+            {
+                name: 'Signal',
+                type: 'line',
+                data: macdSignalData,
+                symbol: 'none',
+                smooth: true,
+                lineStyle: {
+                    width: 2,
+                    color: '#FF5722'
+                },
+                xAxisIndex: 1,
+                yAxisIndex: 1
+            },
+            {
+                name: 'Histogram',
+                type: 'bar',
+                data: macdHistData,
+                itemStyle: {
+                    color: function(params) {
+                        return params.data >= 0 ? '#4CAF50' : '#F44336';
+                    }
+                },
+                xAxisIndex: 1,
+                yAxisIndex: 1
+            }
+        ]
+    };
+
+    // 使用配置绘制图表
+    chart.setOption(option);
+
+    // 窗口大小变化时调整图表大小
+    window.addEventListener('resize', function() {
+        chart.resize();
+    });
+}
+
+// 计算移动平均线
+function calculateMA(days, data) {
+    var result = [];
+    for (var i = 0; i < data.length; i++) {
+        if (i < days - 1) {
+            result.push('-');
+            continue;
+        }
+        var sum = 0;
+        for (var j = 0; j < days; j++) {
+            sum += data[i - j]['收盘'] || 0;
+        }
+        result.push((sum / days).toFixed(2));
+    }
+    return result;
+}
+
+// 计算简单列表的移动平均线
+function calculateSimpleMA(days, data) {
+    var result = [];
+    for (var i = 0; i < data.length; i++) {
+        if (i < days - 1) {
+            result.push('-');
+            continue;
+        }
+        var sum = 0;
+        for (var j = 0; j < days; j++) {
+            sum += data[i - j];
+        }
+        result.push((sum / days).toFixed(2));
+    }
+    return result;
+}
+
+// 计算RSI
+function calculateRSI(period, data) {
+    var result = [];
+    var gains = [];
+    var losses = [];
+
+    // 计算每日涨跌
+    for (var i = 1; i < data.length; i++) {
+        var change = (data[i]['收盘'] || 0) - (data[i-1]['收盘'] || 0);
+        gains.push(Math.max(0, change));
+        losses.push(Math.max(0, -change));
+    }
+
+    // 填充前N个值
+    for (var i = 0; i < period; i++) {
+        result.push('-');
+    }
+
+    // 计算第一个RSI值
+    var avgGain = 0;
+    var avgLoss = 0;
+
+    for (var i = 0; i < period; i++) {
+        avgGain += gains[i];
+        avgLoss += losses[i];
+    }
+
+    avgGain /= period;
+    avgLoss /= period;
+
+    var rs = avgGain / (avgLoss === 0 ? 0.00001 : avgLoss);
+    var rsi = 100 - (100 / (1 + rs));
+    result.push(rsi.toFixed(2));
+
+    // 计算后续RSI值
+    for (var i = period; i < gains.length; i++) {
+        avgGain = ((avgGain * (period - 1)) + gains[i]) / period;
+        avgLoss = ((avgLoss * (period - 1)) + losses[i]) / period;
+
+        rs = avgGain / (avgLoss === 0 ? 0.00001 : avgLoss);
+        rsi = 100 - (100 / (1 + rs));
+        result.push(rsi.toFixed(2));
+    }
+
+    return result;
+}
+
+// 计算MACD
+function calculateMACD(fastPeriod, slowPeriod, signalPeriod, data) {
+    var closePrices = data.map(function(item) {
+        return item['收盘'] || 0;
+    });
+
+    var fastEMA = calculateEMA(fastPeriod, closePrices);
+    var slowEMA = calculateEMA(slowPeriod, closePrices);
+
+    var macdLine = [];
+    for (var i = 0; i < closePrices.length; i++) {
+        if (i < slowPeriod - 1) {
+            macdLine.push(0);
+        } else {
+            macdLine.push(fastEMA[i] - slowEMA[i]);
+        }
+    }
+
+    var signalLine = calculateEMA(signalPeriod, macdLine);
+
+    var histogram = [];
+    for (var i = 0; i < macdLine.length; i++) {
+        histogram.push((macdLine[i] - signalLine[i]).toFixed(4));
+    }
+
+    return {
+        macd: macdLine.map(function(val) { return val.toFixed(4); }),
+        signal: signalLine.map(function(val) { return val.toFixed(4); }),
+        histogram: histogram
+    };
+}
+
+// 计算EMA
+function calculateEMA(period, data) {
+    var result = [];
+    var multiplier = 2 / (period + 1);
+
+    // 初始EMA为第一个周期的SMA
+    var sum = 0;
+    for (var i = 0; i < period; i++) {
+        sum += data[i];
+    }
+    var ema = sum / period;
+
+    // 填充前面的值
+    for (var i = 0; i < period - 1; i++) {
+        result.push(0);
+    }
+
+    result.push(ema);
+
+    // 计算后续EMA值
+    for (var i = period; i < data.length; i++) {
+        ema = (data[i] - ema) * multiplier + ema;
+        result.push(ema);
+    }
+
+    return result;
+}
+
+// 显示交易确认对话框
+function showTradeConfirmDialog() {
+    // 检查是否有交易信号
+    if ($('#tradingDirection').text() === '--') {
+        showMessage('当前没有交易信号，无法执行交易', 'warning');
+        return;
+    }
+
+    // 更新对话框数据
+    updateTradeAmount();
+
+    // 显示对话框
+    $('#tradeConfirmModal').modal('show');
+}
+
+// 执行交易
+function executeTrade() {
+    var stockCode = $('#confirmStockCode').text();
+    var direction = $('#confirmDirection').text();
+    var quantity = parseInt($('#tradeQuantity').val()) || 0;
+    var price = parseFloat($('#confirmPrice').text()) || 0;
+
+    if (!stockCode || !direction || quantity <= 0 || price <= 0) {
+        showMessage('交易参数无效', 'error');
+        return;
+    }
+
+    // 将交易方向转换为API格式
+    var apiDirection = direction === '买入' ? 'buy' : 'sell';
+
+    // 发送交易请求
+    $.ajax({
+        url: '/api/trading/place_order',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            symbol: stockCode,
+            order_type: 'limit',
+            direction: apiDirection,
+            quantity: quantity,
+            price: price
+        }),
+        success: function(response) {
+            // 隐藏确认对话框
+            $('#tradeConfirmModal').modal('hide');
+
+            if (response.success) {
+                showMessage('交易提交成功，订单ID: ' + response.order_id, 'success');
+            } else {
+                showMessage('交易提交失败: ' + response.message, 'error');
+            }
+        },
+        error: function(error) {
+            // 隐藏确认对话框
+            $('#tradeConfirmModal').modal('hide');
+            showMessage('交易请求出错', 'error');
+            console.error('交易请求出错:', error);
+        }
+    });
+}
+
+// 添加到监控列表
+function addToWatchlist() {
+    var stockCode = $('#stockCode').text();
+
+    if (!stockCode) {
+        showMessage('无法添加到监控列表，股票代码无效', 'warning');
+        return;
+    }
+
+    // 发送请求
+    $.ajax({
+        url: '/api/watchlist/add',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            symbol: stockCode
+        }),
+        success: function(response) {
+            if (response.success) {
+                showMessage('已成功添加到监控列表', 'success');
+            } else {
+                showMessage('添加到监控列表失败: ' + response.message, 'error');
+            }
+        },
+        error: function(error) {
+            showMessage('添加到监控列表请求出错', 'error');
+            console.error('添加到监控列表请求出错:', error);
+        }
+    });
+}
+
+// 回测策略
+function backtestStrategy() {
+    var stockCode = $('#stockCode').text();
+
+    if (!stockCode) {
+        showMessage('无法回测，股票代码无效', 'warning');
+        return;
+    }
+
+    // 跳转到回测页面
+    window.location.href = '/backtest?symbol=' + stockCode;
+}
+
+// 显示加载状态
+function showLoading(show) {
+    if (show) {
+        $('#loadingIndicator').show();
+    } else {
+        $('#loadingIndicator').hide();
+    }
+}
+
+// 显示消息提示
+function showMessage(message, type) {
+    var alertClass = 'alert-info';
+
+    switch(type) {
+        case 'success':
+            alertClass = 'alert-success';
+            break;
+        case 'warning':
+            alertClass = 'alert-warning';
+            break;
+        case 'error':
+            alertClass = 'alert-danger';
+            break;
+    }
+
+    var alertHtml = '<div class="alert ' + alertClass + ' alert-dismissible fade show" role="alert">' +
+                    message +
+                    '<button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
+                    '<span aria-hidden="true">&times;</span>' +
+                    '</button>' +
+                    '</div>';
+
+    // 添加到页面顶部
+    $('body').prepend(alertHtml);
+
+    // 5秒后自动关闭
+    setTimeout(function() {
+        $('.alert').alert('close');
+    }, 5000);
+}
+
+// 格式化数字
+function formatNumber(num) {
+    if (num === undefined || num === null) return '--';
+
+    if (num >= 100000000) {
+        return (num / 100000000).toFixed(2) + '亿';
+    } else if (num >= 10000) {
+        return (num / 10000).toFixed(2) + '万';
+    } else {
+        return num.toString();
+    }
+}
+</script>
+{% endblock %}

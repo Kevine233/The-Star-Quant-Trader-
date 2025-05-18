@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}系统设置 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">系统设置</h2>
+    
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">设置导航</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('settings_system') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-gear-fill me-2"></i> 系统设置
+                        </div>
+                        <span class="badge bg-primary rounded-pill"><i class="bi bi-chevron-right"></i></span>
+                    </a>
+                    <a href="{{ url_for('settings_api') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-key-fill me-2"></i> API配置
+                        </div>
+                        <span class="badge bg-primary rounded-pill"><i class="bi bi-chevron-right"></i></span>
+                    </a>
+                    <a href="{{ url_for('settings_risk') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-shield-fill me-2"></i> 风险管理
+                        </div>
+                        <span class="badge bg-primary rounded-pill"><i class="bi bi-chevron-right"></i></span>
+                    </a>
+                    <a href="{{ url_for('backtest_settings') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-graph-up me-2"></i> 回测设置
+                        </div>
+                        <span class="badge bg-primary rounded-pill"><i class="bi bi-chevron-right"></i></span>
+                    </a>
+                    <a href="{{ url_for('trading_settings') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-currency-exchange me-2"></i> 交易设置
+                        </div>
+                        <span class="badge bg-primary rounded-pill"><i class="bi bi-chevron-right"></i></span>
+                    </a>
+                    <a href="{{ url_for('notification_settings') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-bell-fill me-2"></i> 通知设置
+                        </div>
+                        <span class="badge bg-primary rounded-pill"><i class="bi bi-chevron-right"></i></span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">系统状态</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <div class="text-center">
+                            <i class="bi bi-circle-fill text-success fs-1"></i>
+                            <h5 class="mt-2">系统运行正常</h5>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <a href="{{ url_for('settings_system') }}" class="btn btn-outline-primary btn-sm">
+                            查看系统详情
+                        </a>
+                    </div>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        数据源
+                        <span class="badge bg-success">正常</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        策略引擎
+                        <span class="badge bg-success">正常</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        回测系统
+                        <span class="badge bg-success">正常</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        交易执行
+                        <span class="badge bg-warning">待配置</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">系统信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table">
+                                <tbody>
+                                    <tr>
+                                        <th>系统版本</th>
+                                        <td>v4.0.0</td>
+                                    </tr>
+                                    <tr>
+                                        <th>运行环境</th>
+                                        <td>Windows 10</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Python版本</th>
+                                        <td>3.8.10</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table">
+                                <tbody>
+                                    <tr>
+                                        <th>启动时间</th>
+                                        <td>2025-05-18 09:45:12</td>
+                                    </tr>
+                                    <tr>
+                                        <th>运行时长</th>
+                                        <td>2天 5小时 23分钟</td>
+                                    </tr>
+                                    <tr>
+                                        <th>内存使用</th>
+                                        <td>1.2GB</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">快速操作</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-key-fill text-primary fs-1 mb-3"></i>
+                                    <h5>配置API</h5>
+                                    <p class="card-text text-muted">设置数据源和交易API密钥</p>
+                                    <a href="{{ url_for('settings_api') }}" class="btn btn-sm btn-primary mt-2">前往配置</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-shield-fill text-success fs-1 mb-3"></i>
+                                    <h5>风险管理</h5>
+                                    <p class="card-text text-muted">设置交易风控和资金管理参数</p>
+                                    <a href="{{ url_for('settings_risk') }}" class="btn btn-sm btn-success mt-2">前往设置</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-arrow-repeat text-info fs-1 mb-3"></i>
+                                    <h5>备份恢复</h5>
+                                    <p class="card-text text-muted">备份或恢复系统设置和数据</p>
+                                    <a href="{{ url_for('backup_restore') }}" class="btn btn-sm btn-info mt-2">前往操作</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">系统日志</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>级别</th>
+                                    <th>消息</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2025-05-20 08:45:12</td>
+                                    <td><span class="badge bg-info text-dark">INFO</span></td>
+                                    <td>用户访问系统设置页面</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-05-20 08:43:05</td>
+                                    <td><span class="badge bg-success">SUCCESS</span></td>
+                                    <td>成功执行BTC/USDT交易信号检测</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-05-20 08:30:00</td>
+                                    <td><span class="badge bg-info text-dark">INFO</span></td>
+                                    <td>系统定时任务执行：市场数据更新</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-05-20 08:15:32</td>
+                                    <td><span class="badge bg-warning text-dark">WARNING</span></td>
+                                    <td>Binance API请求速率限制接近临界值</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-05-20 08:00:00</td>
+                                    <td><span class="badge bg-info text-dark">INFO</span></td>
+                                    <td>系统定时任务执行：持仓监控</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('settings_system') }}#logs" class="btn btn-sm btn-outline-primary">查看完整日志</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

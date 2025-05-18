@@ -1,0 +1,662 @@
+{% extends "base.html" %}
+
+{% block title %}参数优化 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">策略参数优化</h2>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>优化设置</h5>
+                </div>
+                <div class="card-body">
+                    <form id="optimizeForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="strategy" class="form-label">策略</label>
+                                    <select class="form-select" id="strategy" name="strategy">
+                                        <option value="">请选择策略</option>
+                                        <option value="smart_money">庄家行为识别策略</option>
+                                        <option value="ma_cross">均线交叉策略</option>
+                                        <option value="rsi">RSI策略</option>
+                                        <option value="custom">自定义策略</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="symbol" class="form-label">交易品种</label>
+                                    <div class="input-group">
+                                        <select class="form-select" id="marketType" name="market_type">
+                                            <option value="stock">股票</option>
+                                            <option value="crypto">加密货币</option>
+                                        </select>
+                                        <input type="text" class="form-control" id="symbol" name="symbol" placeholder="例如: AAPL或BTC/USDT">
+                                        <button class="btn btn-outline-secondary" type="button" id="symbolSearch">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="period" class="form-label">优化周期</label>
+                                    <div class="row">
+                                        <div class="col">
+                                            <input type="date" class="form-control" id="start_date" name="start_date">
+                                            <small class="form-text">开始日期</small>
+                                        </div>
+                                        <div class="col">
+                                            <input type="date" class="form-control" id="end_date" name="end_date">
+                                            <small class="form-text">结束日期</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="initial_capital" class="form-label">初始资金</label>
+                                    <input type="number" class="form-control" id="initial_capital" name="initial_capital" value="1000000">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col">
+                                        <div class="mb-3">
+                                            <label for="commission" class="form-label">手续费率(%)</label>
+                                            <input type="number" step="0.01" class="form-control" id="commission" name="commission" value="0.03">
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="mb-3">
+                                            <label for="slippage" class="form-label">滑点(%)</label>
+                                            <input type="number" step="0.01" class="form-control" id="slippage" name="slippage" value="0.01">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="optimize_target" class="form-label">优化目标</label>
+                                    <select class="form-select" id="optimize_target" name="optimize_target">
+                                        <option value="total_return">总收益率</option>
+                                        <option value="sharpe_ratio">夏普比率</option>
+                                        <option value="sortino_ratio">索提诺比率</option>
+                                        <option value="profit_ratio">收益风险比</option>
+                                        <option value="win_rate">胜率</option>
+                                        <option value="custom_score">自定义评分</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div id="parameterControls">
+                            <h6>需要优化的参数</h6>
+                            <div class="alert alert-info">
+                                请先选择策略，然后添加需要优化的参数。
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 mt-3">
+                            <button type="button" class="btn btn-outline-primary" id="addParameter">
+                                <i class="bi bi-plus-circle"></i> 添加参数
+                            </button>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="optimization_method" class="form-label">优化方法</label>
+                                    <select class="form-select" id="optimization_method" name="optimization_method">
+                                        <option value="grid">网格搜索</option>
+                                        <option value="random">随机搜索</option>
+                                        <option value="bayesian">贝叶斯优化</option>
+                                        <option value="genetic">遗传算法</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="max_trials" class="form-label">最大评估次数</label>
+                                    <input type="number" class="form-control" id="max_trials" name="max_trials" value="50">
+                                    <small class="form-text">评估次数越多，优化结果越精确，但耗时也越长</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary" id="startOptimize">开始优化</button>
+                            <button type="reset" class="btn btn-secondary ms-2">重置</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card" id="resultsCard" style="display: none;">
+                <div class="card-header d-flex justify-content-between">
+                    <h5>优化结果</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="exportResults">
+                        <i class="bi bi-download"></i> 导出结果
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div id="optimizeProgress" class="progress mb-3" style="height: 25px; display: none;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div id="optimizeStatus" class="alert alert-info" style="display: none;">
+                                正在优化参数，请稍候...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">最优参数组合</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm" id="bestParamsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>参数</th>
+                                                <th>值</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td colspan="2" class="text-center">尚未完成优化</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">最优回测结果</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm" id="bestResultTable">
+                                        <thead>
+                                            <tr>
+                                                <th>指标</th>
+                                                <th>值</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td colspan="2" class="text-center">尚未完成优化</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">参数影响分析</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="paramInfluenceChart" style="height: 400px;">
+                                        <div class="d-flex justify-content-center align-items-center h-100">
+                                            <span>尚未完成优化</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">所有评估结果</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover" id="allResultsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>试验编号</th>
+                                                    <th>参数组合</th>
+                                                    <th>目标值</th>
+                                                    <th>总收益</th>
+                                                    <th>夏普比率</th>
+                                                    <th>最大回撤</th>
+                                                    <th>操作</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td colspan="7" class="text-center">尚未完成优化</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-primary" id="applyBestParams">应用最优参数</button>
+                        <button type="button" class="btn btn-success ms-2" id="runBacktestWithBest">用最优参数回测</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // 日期默认值
+        const today = new Date();
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(today.getFullYear() - 1);
+        
+        $('#start_date').val(oneYearAgo.toISOString().split('T')[0]);
+        $('#end_date').val(today.toISOString().split('T')[0]);
+        
+        // 添加参数行
+        $('#addParameter').on('click', function() {
+            const paramId = 'param_' + Date.now();
+            const paramHtml = `
+            <div class="row param-row mb-3">
+                <div class="col-md-3">
+                    <input type="text" class="form-control param-name" placeholder="参数名称" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" step="any" class="form-control param-min" placeholder="最小值" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" step="any" class="form-control param-max" placeholder="最大值" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" step="any" class="form-control param-step" placeholder="步长" required>
+                </div>
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control param-desc" placeholder="描述">
+                        <button class="btn btn-outline-danger remove-param" type="button">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            `;
+            
+            if ($('.param-row').length === 0) {
+                $('#parameterControls').html('<h6>需要优化的参数</h6>');
+            }
+            
+            $('#parameterControls').append(paramHtml);
+            
+            // 绑定删除按钮
+            $('.remove-param').off('click').on('click', function() {
+                $(this).closest('.param-row').remove();
+                if ($('.param-row').length === 0) {
+                    $('#parameterControls').html(`
+                    <h6>需要优化的参数</h6>
+                    <div class="alert alert-info">
+                        请先选择策略，然后添加需要优化的参数。
+                    </div>
+                    `);
+                }
+            });
+        });
+        
+        // 策略选择变更
+        $('#strategy').on('change', function() {
+            const strategy = $(this).val();
+            if (strategy) {
+                // 清空现有参数
+                $('#parameterControls').html('<h6>需要优化的参数</h6>');
+                
+                // 根据策略类型添加默认参数
+                if (strategy === 'smart_money') {
+                    // 示例：为庄家行为识别策略添加默认参数
+                    addDefaultParam('volume_threshold', 1.5, 3.5, 0.2, '异常交易量阈值(Z分数)');
+                    addDefaultParam('min_volume_increase', 50, 200, 10, '最小交易量增幅(%)');
+                    addDefaultParam('flow_window', 3, 10, 1, '资金流分析窗口(天)');
+                } else if (strategy === 'ma_cross') {
+                    // 示例：为均线交叉策略添加默认参数
+                    addDefaultParam('short_window', 5, 50, 5, '短期均线周期');
+                    addDefaultParam('long_window', 20, 200, 10, '长期均线周期');
+                } else if (strategy === 'rsi') {
+                    // 示例：为RSI策略添加默认参数
+                    addDefaultParam('rsi_period', 7, 21, 1, 'RSI计算周期');
+                    addDefaultParam('oversold', 20, 40, 5, '超卖阈值');
+                    addDefaultParam('overbought', 60, 80, 5, '超买阈值');
+                }
+                
+                // 绑定删除按钮
+                $('.remove-param').off('click').on('click', function() {
+                    $(this).closest('.param-row').remove();
+                    if ($('.param-row').length === 0) {
+                        $('#parameterControls').html(`
+                        <h6>需要优化的参数</h6>
+                        <div class="alert alert-info">
+                            请先选择策略，然后添加需要优化的参数。
+                        </div>
+                        `);
+                    }
+                });
+            }
+        });
+        
+        // 添加默认参数辅助函数
+        function addDefaultParam(name, min, max, step, desc) {
+            const paramId = 'param_' + Date.now() + '_' + name;
+            const paramHtml = `
+            <div class="row param-row mb-3">
+                <div class="col-md-3">
+                    <input type="text" class="form-control param-name" value="${name}" placeholder="参数名称" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" step="any" class="form-control param-min" value="${min}" placeholder="最小值" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" step="any" class="form-control param-max" value="${max}" placeholder="最大值" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" step="any" class="form-control param-step" value="${step}" placeholder="步长" required>
+                </div>
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control param-desc" value="${desc}" placeholder="描述">
+                        <button class="btn btn-outline-danger remove-param" type="button">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            `;
+            
+            $('#parameterControls').append(paramHtml);
+        }
+        
+        // 表单提交处理
+        $('#optimizeForm').on('submit', function(event) {
+            event.preventDefault(); // 阻止表单的默认提交行为
+            
+            // 收集表单数据
+            const formData = {
+                strategy: $('#strategy').val(),
+                market_type: $('#marketType').val(),
+                symbol: $('#symbol').val(),
+                start_date: $('#start_date').val(),
+                end_date: $('#end_date').val(),
+                initial_capital: parseFloat($('#initial_capital').val()),
+                commission: parseFloat($('#commission').val()) / 100, // 假设后端期望的是小数形式，如 0.0003
+                slippage: parseFloat($('#slippage').val()) / 100,   // 假设后端期望的是小数形式，如 0.0001
+                optimize_target: $('#optimize_target').val(),
+                optimization_method: $('#optimization_method').val(),
+                max_trials: parseInt($('#max_trials').val()),
+                parameters: []
+            };
+            
+            $('.param-row').each(function() {
+                const paramRow = $(this);
+                formData.parameters.push({
+                    name: paramRow.find('.param-name').val(),
+                    min: parseFloat(paramRow.find('.param-min').val()),
+                    max: parseFloat(paramRow.find('.param-max').val()),
+                    step: parseFloat(paramRow.find('.param-step').val()),
+                    description: paramRow.find('.param-desc').val() // 确保后端能处理或忽略此字段
+                });
+            });
+
+            // 验证表单数据 (简单示例)
+            if (!formData.strategy || !formData.symbol || !formData.start_date || !formData.end_date) {
+                toastr.error('请填写所有必填项: 策略, 交易品种, 开始日期, 结束日期');
+                return;
+            }
+            if (formData.parameters.length === 0) {
+                toastr.error('请至少添加一个需要优化的参数');
+                return;
+            }
+            
+            // 显示优化结果区域和进度条/状态
+            $('#resultsCard').show();
+            $('#optimizeProgress').show().find('.progress-bar').css('width', '0%').text('0%');
+            $('#optimizeStatus').show().removeClass('alert-danger alert-success').addClass('alert-info').text('正在向服务器提交优化任务...');
+            $('#bestParamsTable tbody').html('<tr><td colspan="2" class="text-center">等待服务器响应...</td></tr>');
+            $('#bestResultTable tbody').html('<tr><td colspan="2" class="text-center">等待服务器响应...</td></tr>');
+            $('#allResultsTable tbody').html('<tr><td colspan="7" class="text-center">等待服务器响应...</td></tr>');
+            $('#paramInfluenceChart').html('<div class="d-flex justify-content-center align-items-center h-100"><span>等待优化数据...</span></div>');
+
+
+            // 发送AJAX请求到后端API
+            $.ajax({
+                url: '/api/backtest/optimize', // 或者使用 Jinja2: {{ url_for('api.api_backtest_optimize') }}
+                type: 'POST',
+                contentType: 'application/json; charset=utf-8',
+                data: JSON.stringify(formData),
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#startOptimize').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 优化中...');
+                    $('#optimizeStatus').text('优化任务已提交，正在执行，请耐心等待...');
+                    // 对于长时间运行的任务，这里可以开始轮询状态或显示一个更持久的进度指示
+                    // 由于后端API行为未知，暂时只显示一个固定文本。
+                    // 如果后端是同步阻塞的，进度条可能无法实时更新。
+                    $('#optimizeProgress .progress-bar').css('width', '50%').text('处理中...'); 
+                },
+                success: function(response) {
+                    if (response.success && response.data) {
+                        $('#optimizeStatus').removeClass('alert-info').addClass('alert-success').text('参数优化完成！');
+                        $('#optimizeProgress .progress-bar').css('width', '100%').text('完成');
+                        showOptimizationResults(response.data); // 使用API返回的数据展示结果
+                    } else {
+                        $('#optimizeStatus').removeClass('alert-info').addClass('alert-danger').text('优化失败: ' + (response.message || '未知错误'));
+                        $('#optimizeProgress .progress-bar').addClass('bg-danger').css('width', '100%').text('失败');
+                         toastr.error('优化请求失败: ' + (response.message || '服务器返回错误'));
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    $('#optimizeStatus').removeClass('alert-info').addClass('alert-danger').text('优化请求错误: ' + errorThrown);
+                    $('#optimizeProgress .progress-bar').addClass('bg-danger').css('width', '100%').text('错误');
+                    console.error("Optimize API error:", textStatus, errorThrown, jqXHR.responseText);
+                    toastr.error('优化请求错误: ' + errorThrown);
+                },
+                complete: function() {
+                    $('#startOptimize').prop('disabled', false).html('开始优化');
+                }
+            });
+        });
+        
+        // 修改showOptimizationResults以处理来自API的真实数据
+        function showOptimizationResults(apiData) {
+            // apiData 结构假设 (需要根据后端API的实际输出来调整):
+            // apiData = {
+            //     best_params: [{name: "param1", value: 10, description: "P1 Desc"}, {name: "param2", value: 5.5}],
+            //     best_result_metrics: {
+            //         "总收益率": "25.50%", // 后端应返回包含单位或易于格式化的值
+            //         "年化收益率": "10.20%",
+            //         "夏普比率": "1.5",
+            //         "最大回撤": "12.00%",
+            //         "胜率": "60.00%",
+            //         "交易次数": "150"
+            //     },
+            //     all_trials: [
+            //         { trial_id: 1, params_str: "p1=5, p2=3.0", target_metric_value: "15.00%", total_return: "10.00%", sharpe_ratio: "0.8", max_drawdown: "15.00%" },
+            //         // ...更多试验结果
+            //     ],
+            //     param_influence_data: { // 用于图表的数据，格式待定，可能需要前端再处理
+            //         // 例如: { param_name1: [{x_val: 1, y_val: 10}, {x_val: 2, y_val: 12}], ... }
+            //     }
+            // };
+
+            // 1. 最优参数
+            let bestParamsHtml = '';
+            if (apiData.best_params && apiData.best_params.length > 0) {
+                apiData.best_params.forEach(function(param) {
+                    bestParamsHtml += `
+                    <tr>
+                        <td>${param.name}${param.description ? ' (' + param.description + ')' : ''}</td>
+                        <td>${param.value}</td>
+                    </tr>`;
+                });
+            } else {
+                bestParamsHtml = '<tr><td colspan="2" class="text-center">未能获取最优参数</td></tr>';
+            }
+            $('#bestParamsTable tbody').html(bestParamsHtml);
+            
+            // 2. 最优回测结果指标
+            let bestResultHtml = '';
+            if (apiData.best_result_metrics) {
+                for (const [metric, value] of Object.entries(apiData.best_result_metrics)) {
+                     // 尝试从值中提取数值和百分号，并应用颜色
+                    let displayValue = value;
+                    let valueClass = '';
+                    if (typeof value === 'string' && value.includes('%')) {
+                        const numericValue = parseFloat(value.replace('%', ''));
+                        if (!isNaN(numericValue)) {
+                            if (numericValue > 0) valueClass = 'text-success';
+                            else if (numericValue < 0) valueClass = 'text-danger';
+                        }
+                    }
+                    bestResultHtml += `<tr><td>${metric}</td><td class="${valueClass}">${displayValue}</td></tr>`;
+                }
+            } else {
+                bestResultHtml = '<tr><td colspan="2" class="text-center">未能获取最优回测指标</td></tr>';
+            }
+            $('#bestResultTable tbody').html(bestResultHtml);
+            
+            // 3. 所有评估结果 (试验详情)
+            let allResultsHtml = '';
+            if (apiData.all_trials && apiData.all_trials.length > 0) {
+                apiData.all_trials.forEach(function(trial) {
+                    // 后端应提供易于显示的指标值
+                    let targetDisplay = trial.target_metric_value || 'N/A';
+                    let returnDisplay = trial.total_return || 'N/A';
+                    let sharpeDisplay = trial.sharpe_ratio || 'N/A';
+                    let drawdownDisplay = trial.max_drawdown || 'N/A';
+
+                    let targetClass = '';
+                     if (typeof trial.target_metric_value === 'string' && trial.target_metric_value.includes('%')) {
+                        const numericValue = parseFloat(trial.target_metric_value.replace('%', ''));
+                        if (!isNaN(numericValue)) {
+                            if (numericValue > 0) targetClass = 'text-success';
+                            else if (numericValue < 0) targetClass = 'text-danger';
+                        }
+                    }
+                    
+                    allResultsHtml += `
+                    <tr>
+                        <td>${trial.trial_id || 'N/A'}</td>
+                        <td>${trial.params_str || 'N/A'}</td>
+                        <td class="${targetClass}">${targetDisplay}</td>
+                        <td>${returnDisplay}</td>
+                        <td>${sharpeDisplay}</td>
+                        <td>${drawdownDisplay}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info view-trial-details" data-trial-id="${trial.trial_id || ''}">详情</button>
+                        </td>
+                    </tr>`;
+                });
+            } else {
+                allResultsHtml = '<tr><td colspan="7" class="text-center">未能获取所有试验结果</td></tr>';
+            }
+            $('#allResultsTable tbody').html(allResultsHtml);
+            
+            // 4. 参数影响图表 - 假设API直接返回Plotly兼容数据或需要前端处理的数据
+            if (apiData.param_influence_data) {
+                 // 如果apiData.param_influence_data是Plotly的traces和layout，可以直接用
+                 // Plotly.newPlot('paramInfluenceChart', apiData.param_influence_data.traces, apiData.param_influence_data.layout);
+                 // 否则，需要调用 renderParamInfluenceChart
+                renderParamInfluenceChart(apiData.param_influence_data, $('#optimize_target').val());
+            } else {
+                 $('#paramInfluenceChart').html('<div class="d-flex justify-content-center align-items-center h-100"><span>参数影响图表数据不可用</span></div>');
+            }
+        }
+        
+        // 修改 renderParamInfluenceChart 以处理来自API的真实数据
+        function renderParamInfluenceChart(paramInfluenceData, optimizeTargetName) {
+            // paramInfluenceData 结构假设 (需要根据后端API的实际输出来调整):
+            // paramInfluenceData = {
+            //     "param_name1": [ { "value": 1, "target": 0.5 }, { "value": 2, "target": 0.8 }, ... ],
+            //     "param_name2": [ { "value": 10, "target": 0.6 }, { "value": 20, "target": 0.9 }, ... ],
+            // }
+            // 或者后端直接提供Plotly的 traces 和 layout
+            
+            if (!paramInfluenceData || Object.keys(paramInfluenceData).length === 0) {
+                $('#paramInfluenceChart').html('<div class="d-flex justify-content-center align-items-center h-100"><span>参数影响图表数据不足</span></div>');
+                return;
+            }
+
+            const traces = [];
+            for (const paramName in paramInfluenceData) {
+                if (paramInfluenceData.hasOwnProperty(paramName) && Array.isArray(paramInfluenceData[paramName])) {
+                    const x_values = paramInfluenceData[paramName].map(p => p.value);
+                    const y_values = paramInfluenceData[paramName].map(p => p.target);
+                    traces.push({
+                        x: x_values,
+                        y: y_values,
+                        mode: 'lines+markers',
+                        name: paramName,
+                        line: {shape: 'spline'} //平滑曲线
+                    });
+                }
+            }
+
+            if (traces.length === 0) {
+                $('#paramInfluenceChart').html('<div class="d-flex justify-content-center align-items-center h-100"><span>未能生成参数影响图表轨迹</span></div>');
+                return;
+            }
+            
+            const layout = {
+                title: '参数对优化目标 (' + (optimizeTargetName || '目标值') + ') 的影响',
+                xaxis: {
+                    title: '参数值',
+                    autorange: true
+                },
+                yaxis: {
+                    title: (optimizeTargetName || '目标值'),
+                    autorange: true
+                },
+                legend: {
+                    x: 0,
+                    y: 1,
+                    traceorder: 'normal'
+                },
+                margin: { l: 50, r: 30, b: 50, t: 50, pad: 4 } // 调整边距
+            };
+            
+            Plotly.newPlot('paramInfluenceChart', traces, layout, {responsive: true});
+        }
+        
+        // 应用最优参数按钮
+        $('#applyBestParams').on('click', function() {
+            alert('最优参数已应用！在策略参数设置页面可以查看和编辑这些参数。');
+        });
+        
+        // 使用最优参数回测按钮
+        $('#runBacktestWithBest').on('click', function() {
+            window.location.href = '/backtest/new?use_optimal=true';
+        });
+        
+        // 导出结果按钮
+        $('#exportResults').on('click', function() {
+            alert('结果已导出到 optimize_results.csv');
+        });
+    });
+</script>
+{% endblock %} 

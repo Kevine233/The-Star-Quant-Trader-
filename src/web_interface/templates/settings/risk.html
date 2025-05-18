@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}风控设置 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">风控设置</h2>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>风控参数配置</h5>
+                </div>
+                <div class="card-body">
+                    <form id="riskSettingsForm">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">资金风控</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="max_position_size" class="form-label">单一仓位最大比例</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="max_position_size" step="0.01" value="0.2">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <div class="form-text">单一仓位占总资金的最大比例</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="max_total_position" class="form-label">总仓位最大比例</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="max_total_position" step="0.01" value="0.8">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <div class="form-text">总仓位占总资金的最大比例</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="daily_loss_limit" class="form-label">单日最大亏损限制</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="daily_loss_limit" step="0.01" value="0.05">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <div class="form-text">达到此亏损比例时自动暂停交易</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">交易风控</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="stop_loss_pct" class="form-label">止损百分比</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="stop_loss_pct" step="0.01" value="0.05">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <div class="form-text">价格下跌超过此比例时触发止损</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="take_profit_pct" class="form-label">止盈百分比</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="take_profit_pct" step="0.01" value="0.1">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <div class="form-text">价格上涨超过此比例时触发止盈</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="max_trades_per_day" class="form-label">每日最大交易次数</label>
+                                            <input type="number" class="form-control" id="max_trades_per_day" value="10">
+                                            <div class="form-text">每个交易日允许的最大交易次数</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header bg-light">高级风控设置</div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="enable_trailing_stop" checked>
+                                                        <label class="form-check-label" for="enable_trailing_stop">启用追踪止损</label>
+                                                    </div>
+                                                    <div class="form-text">价格回调时自动调整止损位</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="enable_volatility_control" checked>
+                                                        <label class="form-check-label" for="enable_volatility_control">启用波动率控制</label>
+                                                    </div>
+                                                    <div class="form-text">高波动率时自动降低仓位</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="enable_correlation_control" checked>
+                                                        <label class="form-check-label" for="enable_correlation_control">启用相关性控制</label>
+                                                    </div>
+                                                    <div class="form-text">控制高相关性资产的总仓位</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 text-center">
+                            <button type="submit" class="btn btn-primary">保存设置</button>
+                            <button type="button" class="btn btn-secondary ms-2" id="resetBtn">恢复默认</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // 风控设置表单提交
+        $("#riskSettingsForm").submit(function(e) {
+            e.preventDefault();
+            alert("风控设置已保存");
+        });
+        
+        // 恢复默认设置
+        $("#resetBtn").click(function() {
+            if (confirm("确定要恢复默认设置吗？")) {
+                $("#max_position_size").val(0.2);
+                $("#max_total_position").val(0.8);
+                $("#daily_loss_limit").val(0.05);
+                $("#stop_loss_pct").val(0.05);
+                $("#take_profit_pct").val(0.1);
+                $("#max_trades_per_day").val(10);
+                $("#enable_trailing_stop").prop("checked", true);
+                $("#enable_volatility_control").prop("checked", true);
+                $("#enable_correlation_control").prop("checked", true);
+            }
+        });
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,793 @@
+{% extends "base.html" %}
+
+{% block title %}系统状态 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">系统状态</h2>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">状态概览</h5>
+                    <button class="btn btn-sm btn-outline-primary" id="refreshSystemStatus">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card mb-3 bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title text-muted">系统状态</h6>
+                                    <div id="systemStatusIndicator" class="mb-2">
+                                        <i class="bi bi-circle-fill text-success fs-1"></i>
+                                    </div>
+                                    <h5 id="systemStatusText" class="text-success">正常运行</h5>
+                                    <p id="systemUptime" class="text-muted">运行时间: 3天 5小时</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card mb-3 bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title text-muted">CPU使用率</h6>
+                                    <div class="progress mb-2" style="height: 20px;">
+                                        <div id="cpuUsageBar" class="progress-bar" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+                                    </div>
+                                    <p id="cpuCoresInfo" class="text-muted">4核心 / 8线程</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card mb-3 bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title text-muted">内存使用率</h6>
+                                    <div class="progress mb-2" style="height: 20px;">
+                                        <div id="memoryUsageBar" class="progress-bar" role="progressbar" style="width: 40%;" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100">40%</div>
+                                    </div>
+                                    <p id="memoryInfo" class="text-muted">已用: 3.2GB / 总计: 8GB</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card mb-3 bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title text-muted">磁盘使用率</h6>
+                                    <div class="progress mb-2" style="height: 20px;">
+                                        <div id="diskUsageBar" class="progress-bar" role="progressbar" style="width: 65%;" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65%</div>
+                                    </div>
+                                    <p id="diskInfo" class="text-muted">已用: 195GB / 总计: 300GB</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card mb-3 bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">系统信息</h6>
+                                    <table class="table table-sm">
+                                        <tbody>
+                                            <tr>
+                                                <th>操作系统</th>
+                                                <td id="osInfo">Windows 10 Professional</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Python版本</th>
+                                                <td id="pythonVersion">3.8.10</td>
+                                            </tr>
+                                            <tr>
+                                                <th>系统版本</th>
+                                                <td id="systemVersion">1.0.0</td>
+                                            </tr>
+                                            <tr>
+                                                <th>启动时间</th>
+                                                <td id="startTime">2025-05-14 16:54:32</td>
+                                            </tr>
+                                            <tr>
+                                                <th>主机名</th>
+                                                <td id="hostName">DESKTOP-ABCDEF</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3 bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">组件状态</h6>
+                                    <table class="table table-sm">
+                                        <tbody>
+                                            <tr>
+                                                <th>数据库</th>
+                                                <td id="databaseStatus">
+                                                    <span class="badge bg-success">正常</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th>数据源服务</th>
+                                                <td id="dataSourceStatus">
+                                                    <span class="badge bg-success">正常</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th>策略引擎</th>
+                                                <td id="strategyEngineStatus">
+                                                    <span class="badge bg-success">正常</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th>交易执行器</th>
+                                                <td id="tradeExecutorStatus">
+                                                    <span class="badge bg-warning">部分可用</span>
+                                                    <small class="text-muted ms-2">股票API未配置</small>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th>日志服务</th>
+                                                <td id="logServiceStatus">
+                                                    <span class="badge bg-success">正常</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">系统日志</h5>
+                    <div>
+                        <select class="form-select form-select-sm d-inline-block w-auto me-2" id="logLevelFilter">
+                            <option value="all">所有级别</option>
+                            <option value="error">仅错误</option>
+                            <option value="warning">警告及以上</option>
+                            <option value="info">信息及以上</option>
+                            <option value="debug">调试及以上</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-primary" id="exportLogs">
+                            <i class="bi bi-download"></i> 导出日志
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>级别</th>
+                                    <th>组件</th>
+                                    <th>消息</th>
+                                </tr>
+                            </thead>
+                            <tbody id="systemLogs">
+                                <tr>
+                                    <td>2025-05-17 21:45:32</td>
+                                    <td><span class="badge bg-info text-dark">INFO</span></td>
+                                    <td>系统</td>
+                                    <td>系统启动完成</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-05-17 21:45:28</td>
+                                    <td><span class="badge bg-info text-dark">INFO</span></td>
+                                    <td>数据源服务</td>
+                                    <td>加密货币数据源初始化成功</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-05-17 21:45:26</td>
+                                    <td><span class="badge bg-warning text-dark">WARN</span></td>
+                                    <td>数据源服务</td>
+                                    <td>股票数据源API密钥未配置，使用模拟数据</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-05-17 21:45:24</td>
+                                    <td><span class="badge bg-info text-dark">INFO</span></td>
+                                    <td>数据库</td>
+                                    <td>数据库连接成功</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-05-17 21:45:18</td>
+                                    <td><span class="badge bg-info text-dark">INFO</span></td>
+                                    <td>系统</td>
+                                    <td>正在初始化系统组件...</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-05-17 21:45:12</td>
+                                    <td><span class="badge bg-info text-dark">INFO</span></td>
+                                    <td>系统</td>
+                                    <td>系统启动中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-sm btn-outline-secondary" id="loadMoreLogs">加载更多日志</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">系统维护</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">数据库维护</h6>
+                                    <p class="card-text">执行数据库优化，清理过期数据，保持系统高效运行。</p>
+                                    <button class="btn btn-sm btn-primary" id="optimizeDatabase">优化数据库</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">清理缓存</h6>
+                                    <p class="card-text">清除系统缓存数据，释放磁盘空间。</p>
+                                    <button class="btn btn-sm btn-primary" id="clearCache">清理缓存</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">重启服务</h6>
+                                    <p class="card-text">如果遇到系统异常，可以尝试重启服务。</p>
+                                    <button class="btn btn-sm btn-warning" id="restartService">重启服务</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">备份系统</h6>
+                                    <p class="card-text">备份系统数据和配置，以防数据丢失。</p>
+                                    <button class="btn btn-sm btn-primary" id="backupSystem">创建备份</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">系统诊断</h6>
+                                    <p class="card-text">执行系统检查，诊断潜在问题。</p>
+                                    <button class="btn btn-sm btn-primary" id="runDiagnostics">运行诊断</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">检查更新</h6>
+                                    <p class="card-text">检查系统更新，保持最新功能和安全性。</p>
+                                    <button class="btn btn-sm btn-primary" id="checkUpdates">检查更新</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 操作确认模态框 -->
+<div class="modal fade" id="confirmActionModal" tabindex="-1" aria-labelledby="confirmActionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmActionModalLabel">确认操作</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmActionText">您确定要执行此操作吗？</p>
+                <div class="form-check mb-3" id="confirmActionBackupOption" style="display: none;">
+                    <input class="form-check-input" type="checkbox" id="actionBackupCheckbox" checked>
+                    <label class="form-check-label" for="actionBackupCheckbox">
+                        在操作前创建备份
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmActionButton">确认执行</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 操作进度模态框 -->
+<div class="modal fade" id="actionProgressModal" tabindex="-1" aria-labelledby="actionProgressModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actionProgressModalLabel">操作进行中</h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">处理中...</span>
+                    </div>
+                    <p class="mt-2" id="actionProgressText">正在处理，请稍候...</p>
+                </div>
+                <div class="progress" id="actionProgressBar" style="height: 20px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 操作结果模态框 -->
+<div class="modal fade" id="actionResultModal" tabindex="-1" aria-labelledby="actionResultModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actionResultModalLabel">操作结果</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="actionResultSuccess" style="display: none;">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                    </div>
+                    <div class="alert alert-success">
+                        <span id="actionResultSuccessMessage">操作已成功完成。</span>
+                    </div>
+                    <div id="actionResultSuccessDetails"></div>
+                </div>
+                <div id="actionResultFailure" style="display: none;">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-x-circle-fill text-danger fs-1"></i>
+                    </div>
+                    <div class="alert alert-danger">
+                        <span id="actionResultFailureMessage">操作失败。</span>
+                    </div>
+                    <div id="actionResultFailureDetails"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        // 加载系统状态
+        loadSystemStatus();
+        
+        // 加载系统日志
+        loadSystemLogs();
+        
+        // 刷新系统状态按钮
+        $('#refreshSystemStatus').on('click', function() {
+            $(this).prop('disabled', true);
+            $(this).html('<span class="spinner-border spinner-border-sm"></span> 刷新中...');
+            
+            loadSystemStatus().always(function() {
+                $('#refreshSystemStatus').prop('disabled', false);
+                $('#refreshSystemStatus').html('<i class="bi bi-arrow-clockwise"></i> 刷新');
+            });
+        });
+        
+        // 日志级别过滤器
+        $('#logLevelFilter').on('change', function() {
+            loadSystemLogs($(this).val());
+        });
+        
+        // 加载更多日志按钮
+        $('#loadMoreLogs').on('click', function() {
+            loadMoreLogs();
+        });
+        
+        // 导出日志按钮
+        $('#exportLogs').on('click', function() {
+            exportSystemLogs();
+        });
+        
+        // 维护操作按钮
+        $('#optimizeDatabase').on('click', function() {
+            showConfirmDialog('优化数据库', '这将优化数据库并清理过期数据。此操作可能需要几分钟时间，是否继续？', true, function() {
+                performSystemAction('optimize_database');
+            });
+        });
+        
+        $('#clearCache').on('click', function() {
+            showConfirmDialog('清理缓存', '这将清除系统缓存数据。是否继续？', false, function() {
+                performSystemAction('clear_cache');
+            });
+        });
+        
+        $('#restartService').on('click', function() {
+            showConfirmDialog('重启服务', '这将重启系统服务，可能会导致正在进行的操作中断。是否继续？', true, function() {
+                performSystemAction('restart_service');
+            });
+        });
+        
+        $('#backupSystem').on('click', function() {
+            showConfirmDialog('创建备份', '这将创建系统数据和配置的备份。是否继续？', false, function() {
+                performSystemAction('backup_system');
+            });
+        });
+        
+        $('#runDiagnostics').on('click', function() {
+            showConfirmDialog('运行诊断', '这将执行系统全面诊断，可能需要几分钟时间。是否继续？', false, function() {
+                performSystemAction('run_diagnostics');
+            });
+        });
+        
+        $('#checkUpdates').on('click', function() {
+            performSystemAction('check_updates');
+        });
+        
+        // 加载系统状态
+        function loadSystemStatus() {
+            return $.ajax({
+                url: '/api/system/status',
+                type: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        updateSystemStatus(response.data);
+                    } else {
+                        console.error('加载系统状态失败:', response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('请求系统状态失败:', error);
+                    showSystemOffline();
+                }
+            });
+        }
+        
+        // 更新系统状态显示
+        function updateSystemStatus(data) {
+            // 系统状态指示器
+            if (data.system_status === 'normal') {
+                $('#systemStatusIndicator').html('<i class="bi bi-circle-fill text-success fs-1"></i>');
+                $('#systemStatusText').text('正常运行').removeClass('text-danger text-warning').addClass('text-success');
+            } else if (data.system_status === 'warning') {
+                $('#systemStatusIndicator').html('<i class="bi bi-exclamation-circle-fill text-warning fs-1"></i>');
+                $('#systemStatusText').text('注意').removeClass('text-danger text-success').addClass('text-warning');
+            } else {
+                $('#systemStatusIndicator').html('<i class="bi bi-x-circle-fill text-danger fs-1"></i>');
+                $('#systemStatusText').text('异常').removeClass('text-success text-warning').addClass('text-danger');
+            }
+            
+            // 运行时间
+            $('#systemUptime').text('运行时间: ' + data.uptime);
+            
+            // CPU使用率
+            const cpuUsage = data.cpu_usage;
+            $('#cpuUsageBar').css('width', cpuUsage + '%').text(cpuUsage + '%');
+            if (cpuUsage > 80) {
+                $('#cpuUsageBar').removeClass('bg-success bg-warning').addClass('bg-danger');
+            } else if (cpuUsage > 60) {
+                $('#cpuUsageBar').removeClass('bg-success bg-danger').addClass('bg-warning');
+            } else {
+                $('#cpuUsageBar').removeClass('bg-warning bg-danger').addClass('bg-success');
+            }
+            $('#cpuCoresInfo').text(data.cpu_cores + '核心 / ' + data.cpu_threads + '线程');
+            
+            // 内存使用率
+            const memUsage = data.memory_usage;
+            $('#memoryUsageBar').css('width', memUsage + '%').text(memUsage + '%');
+            if (memUsage > 80) {
+                $('#memoryUsageBar').removeClass('bg-success bg-warning').addClass('bg-danger');
+            } else if (memUsage > 60) {
+                $('#memoryUsageBar').removeClass('bg-success bg-danger').addClass('bg-warning');
+            } else {
+                $('#memoryUsageBar').removeClass('bg-warning bg-danger').addClass('bg-success');
+            }
+            $('#memoryInfo').text('已用: ' + data.memory_used + ' / 总计: ' + data.memory_total);
+            
+            // 磁盘使用率
+            const diskUsage = data.disk_usage;
+            $('#diskUsageBar').css('width', diskUsage + '%').text(diskUsage + '%');
+            if (diskUsage > 85) {
+                $('#diskUsageBar').removeClass('bg-success bg-warning').addClass('bg-danger');
+            } else if (diskUsage > 70) {
+                $('#diskUsageBar').removeClass('bg-success bg-danger').addClass('bg-warning');
+            } else {
+                $('#diskUsageBar').removeClass('bg-warning bg-danger').addClass('bg-success');
+            }
+            $('#diskInfo').text('已用: ' + data.disk_used + ' / 总计: ' + data.disk_total);
+            
+            // 系统信息
+            $('#osInfo').text(data.os_info);
+            $('#pythonVersion').text(data.python_version);
+            $('#systemVersion').text(data.system_version);
+            $('#startTime').text(data.start_time);
+            $('#hostName').text(data.host_name);
+            
+            // 组件状态
+            updateComponentStatus('databaseStatus', data.components.database);
+            updateComponentStatus('dataSourceStatus', data.components.data_source);
+            updateComponentStatus('strategyEngineStatus', data.components.strategy_engine);
+            updateComponentStatus('tradeExecutorStatus', data.components.trade_executor);
+            updateComponentStatus('logServiceStatus', data.components.log_service);
+        }
+        
+        // 更新组件状态
+        function updateComponentStatus(elementId, status) {
+            let badgeClass, statusText;
+            
+            if (status.status === 'normal') {
+                badgeClass = 'bg-success';
+                statusText = '正常';
+            } else if (status.status === 'warning') {
+                badgeClass = 'bg-warning';
+                statusText = '部分可用';
+            } else {
+                badgeClass = 'bg-danger';
+                statusText = '异常';
+            }
+            
+            let html = `<span class="badge ${badgeClass}">${statusText}</span>`;
+            if (status.message) {
+                html += `<small class="text-muted ms-2">${status.message}</small>`;
+            }
+            
+            $('#' + elementId).html(html);
+        }
+        
+        // 显示系统离线状态
+        function showSystemOffline() {
+            $('#systemStatusIndicator').html('<i class="bi bi-x-circle-fill text-danger fs-1"></i>');
+            $('#systemStatusText').text('系统离线').removeClass('text-success text-warning').addClass('text-danger');
+            
+            // 重置其他状态显示
+            $('#cpuUsageBar, #memoryUsageBar, #diskUsageBar').css('width', '0%').text('0%');
+            $('#cpuCoresInfo, #memoryInfo, #diskInfo').text('无法获取');
+            
+            // 组件状态设为离线
+            $('.components-status .badge').removeClass('bg-success bg-warning').addClass('bg-danger').text('离线');
+        }
+        
+        // 加载系统日志
+        function loadSystemLogs(level = 'all', page = 1) {
+            $.ajax({
+                url: '/api/system/logs',
+                type: 'GET',
+                data: {
+                    level: level,
+                    page: page
+                },
+                success: function(response) {
+                    if (response.success) {
+                        if (page === 1) {
+                            $('#systemLogs').empty();
+                        }
+                        
+                        appendSystemLogs(response.logs);
+                        
+                        if (response.has_more) {
+                            $('#loadMoreLogs').show();
+                        } else {
+                            $('#loadMoreLogs').hide();
+                        }
+                    } else {
+                        console.error('加载系统日志失败:', response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('请求系统日志失败:', error);
+                }
+            });
+        }
+        
+        // 加载更多日志
+        function loadMoreLogs() {
+            const level = $('#logLevelFilter').val();
+            const currentPage = parseInt($('#loadMoreLogs').data('current-page') || 1);
+            const nextPage = currentPage + 1;
+            
+            $('#loadMoreLogs').text('加载中...').prop('disabled', true);
+            
+            loadSystemLogs(level, nextPage);
+            
+            $('#loadMoreLogs').data('current-page', nextPage);
+            $('#loadMoreLogs').text('加载更多日志').prop('disabled', false);
+        }
+        
+        // 向日志表格添加日志项
+        function appendSystemLogs(logs) {
+            logs.forEach(function(log) {
+                let badgeClass;
+                
+                switch (log.level.toLowerCase()) {
+                    case 'error':
+                        badgeClass = 'bg-danger';
+                        break;
+                    case 'warning':
+                    case 'warn':
+                        badgeClass = 'bg-warning text-dark';
+                        break;
+                    case 'info':
+                        badgeClass = 'bg-info text-dark';
+                        break;
+                    case 'debug':
+                        badgeClass = 'bg-secondary';
+                        break;
+                    default:
+                        badgeClass = 'bg-secondary';
+                }
+                
+                const levelBadge = `<span class="badge ${badgeClass}">${log.level.toUpperCase()}</span>`;
+                
+                $('#systemLogs').append(`
+                    <tr>
+                        <td>${log.timestamp}</td>
+                        <td>${levelBadge}</td>
+                        <td>${log.component}</td>
+                        <td>${log.message}</td>
+                    </tr>
+                `);
+            });
+        }
+        
+        // 导出系统日志
+        function exportSystemLogs() {
+            const level = $('#logLevelFilter').val();
+            
+            window.location.href = `/api/system/export_logs?level=${level}`;
+        }
+        
+        // 显示确认对话框
+        function showConfirmDialog(title, message, showBackupOption, onConfirm) {
+            $('#confirmActionModalLabel').text(title);
+            $('#confirmActionText').text(message);
+            
+            if (showBackupOption) {
+                $('#confirmActionBackupOption').show();
+            } else {
+                $('#confirmActionBackupOption').hide();
+            }
+            
+            $('#confirmActionButton').off('click').on('click', function() {
+                const createBackup = $('#actionBackupCheckbox').is(':checked');
+                $('#confirmActionModal').modal('hide');
+                
+                if (typeof onConfirm === 'function') {
+                    onConfirm(createBackup);
+                }
+            });
+            
+            $('#confirmActionModal').modal('show');
+        }
+        
+        // 执行系统维护操作
+        function performSystemAction(action, options = {}) {
+            // 显示进度对话框
+            $('#actionProgressModalLabel').text('正在执行操作');
+            $('#actionProgressText').text('正在处理，请稍候...');
+            $('#actionProgressBar .progress-bar').css('width', '0%').text('0%');
+            $('#actionProgressModal').modal('show');
+            
+            // 模拟进度更新（实际应用中可能需要轮询后端获取真实进度）
+            const progressInterval = setInterval(function() {
+                const currentProgress = parseInt($('#actionProgressBar .progress-bar').css('width')) / $('#actionProgressBar').width() * 100;
+                const newProgress = Math.min(currentProgress + 5, 90); // 最大到90%，剩下的10%在操作完成时更新
+                
+                $('#actionProgressBar .progress-bar').css('width', newProgress + '%').text(Math.round(newProgress) + '%');
+            }, 500);
+            
+            // 发送操作请求到后端
+            $.ajax({
+                url: '/api/system/perform_action',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    action: action,
+                    create_backup: options.createBackup || false,
+                    options: options
+                }),
+                success: function(response) {
+                    clearInterval(progressInterval);
+                    $('#actionProgressModal').modal('hide');
+                    
+                    if (response.success) {
+                        showActionSuccess(response.message, response.details);
+                        
+                        // 如果需要，刷新系统状态
+                        if (action !== 'check_updates') {
+                            loadSystemStatus();
+                        }
+                    } else {
+                        showActionFailure(response.message, response.details);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    clearInterval(progressInterval);
+                    $('#actionProgressModal').modal('hide');
+                    
+                    showActionFailure('请求失败: ' + error);
+                }
+            });
+        }
+        
+        // 显示操作成功结果
+        function showActionSuccess(message, details) {
+            $('#actionResultModalLabel').text('操作成功');
+            $('#actionResultSuccessMessage').text(message || '操作已成功完成。');
+            
+            if (details) {
+                let detailsHtml = '';
+                
+                if (typeof details === 'string') {
+                    detailsHtml = `<div class="alert alert-light mt-3">${details}</div>`;
+                } else if (Array.isArray(details)) {
+                    detailsHtml = '<ul class="mt-3 list-group">';
+                    details.forEach(function(item) {
+                        detailsHtml += `<li class="list-group-item">${item}</li>`;
+                    });
+                    detailsHtml += '</ul>';
+                } else {
+                    detailsHtml = `<pre class="mt-3 bg-light p-3 rounded"><code>${JSON.stringify(details, null, 2)}</code></pre>`;
+                }
+                
+                $('#actionResultSuccessDetails').html(detailsHtml);
+            } else {
+                $('#actionResultSuccessDetails').empty();
+            }
+            
+            $('#actionResultSuccess').show();
+            $('#actionResultFailure').hide();
+            $('#actionResultModal').modal('show');
+        }
+        
+        // 显示操作失败结果
+        function showActionFailure(message, details) {
+            $('#actionResultModalLabel').text('操作失败');
+            $('#actionResultFailureMessage').text(message || '操作失败。');
+            
+            if (details) {
+                let detailsHtml = '';
+                
+                if (typeof details === 'string') {
+                    detailsHtml = `<div class="alert alert-light mt-3">${details}</div>`;
+                } else if (Array.isArray(details)) {
+                    detailsHtml = '<ul class="mt-3 list-group">';
+                    details.forEach(function(item) {
+                        detailsHtml += `<li class="list-group-item">${item}</li>`;
+                    });
+                    detailsHtml += '</ul>';
+                } else {
+                    detailsHtml = `<pre class="mt-3 bg-light p-3 rounded"><code>${JSON.stringify(details, null, 2)}</code></pre>`;
+                }
+                
+                $('#actionResultFailureDetails').html(detailsHtml);
+            } else {
+                $('#actionResultFailureDetails').empty();
+            }
+            
+            $('#actionResultSuccess').hide();
+            $('#actionResultFailure').show();
+            $('#actionResultModal').modal('show');
+        }
+    });
+</script>
+{% endblock %} 

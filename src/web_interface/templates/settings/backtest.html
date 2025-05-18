@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}回测设置 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">回测系统设置</h2>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">回测参数配置</h5>
+                </div>
+                <div class="card-body">
+                    <form id="backtestSettingsForm">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">基础回测参数</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="initial_capital" class="form-label">初始资金</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="initial_capital" value="{{ config.backtest.default_initial_capital|default(1000000) }}">
+                                                <span class="input-group-text">元</span>
+                                            </div>
+                                            <div class="form-text">回测时使用的默认初始资金</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="commission_rate" class="form-label">交易手续费率</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="commission_rate" step="0.0001" min="0" max="0.01" value="{{ config.backtest.default_commission_rate|default(0.0003) }}">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <div class="form-text">交易手续费率（例如：0.0003表示万分之三）</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="slippage" class="form-label">滑点设置</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="slippage" step="0.0001" min="0" max="0.01" value="{{ config.backtest.default_slippage|default(0.0001) }}">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <div class="form-text">价格滑点设置（例如：0.0001表示万分之一）</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">高级回测参数</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="data_source_priority" class="form-label">数据源优先级</label>
+                                            <select class="form-select" id="data_source_priority">
+                                                <option value="local_first" {% if config.backtest.data_source_priority == 'local_first' %}selected{% endif %}>优先使用本地数据</option>
+                                                <option value="remote_first" {% if config.backtest.data_source_priority == 'remote_first' %}selected{% endif %}>优先使用远程数据</option>
+                                                <option value="local_only" {% if config.backtest.data_source_priority == 'local_only' %}selected{% endif %}>仅使用本地数据</option>
+                                                <option value="remote_only" {% if config.backtest.data_source_priority == 'remote_only' %}selected{% endif %}>仅使用远程数据</option>
+                                            </select>
+                                            <div class="form-text">设置回测数据源的优先级</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="max_threads" class="form-label">最大线程数</label>
+                                            <input type="number" class="form-control" id="max_threads" min="1" max="32" value="{{ config.backtest.max_threads|default(4) }}">
+                                            <div class="form-text">并行回测使用的最大线程数</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="enable_detailed_logs" {% if config.backtest.enable_detailed_logs %}checked{% endif %}>
+                                                <label class="form-check-label" for="enable_detailed_logs">启用详细日志</label>
+                                            </div>
+                                            <div class="form-text">是否记录详细的回测过程日志（可能会降低回测速度）</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header bg-light">回测结果设置</div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="save_trade_records" checked>
+                                                        <label class="form-check-label" for="save_trade_records">保存交易记录</label>
+                                                    </div>
+                                                    <div class="form-text">是否保存回测中的每笔交易记录</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="generate_visualization" checked>
+                                                        <label class="form-check-label" for="generate_visualization">生成可视化图表</label>
+                                                    </div>
+                                                    <div class="form-text">是否为回测结果生成图表</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="auto_save_results" checked>
+                                                        <label class="form-check-label" for="auto_save_results">自动保存结果</label>
+                                                    </div>
+                                                    <div class="form-text">回测完成后自动保存结果</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="results_storage_path" class="form-label">结果存储路径</label>
+                                                    <input type="text" class="form-control" id="results_storage_path" value="{{ config.backtest.results_storage_path|default('./backtest_results') }}">
+                                                    <div class="form-text">回测结果的存储路径（相对或绝对路径）</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="max_results_saved" class="form-label">最大保存结果数</label>
+                                                    <input type="number" class="form-control" id="max_results_saved" min="1" value="{{ config.backtest.max_results_saved|default(100) }}">
+                                                    <div class="form-text">系统最多保存的回测结果数量，超过后会删除最旧的结果</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header bg-light">参数优化设置</div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="optimization_method" class="form-label">优化方法</label>
+                                                    <select class="form-select" id="optimization_method">
+                                                        <option value="grid_search" {% if config.backtest.optimization_method == 'grid_search' %}selected{% endif %}>网格搜索</option>
+                                                        <option value="random_search" {% if config.backtest.optimization_method == 'random_search' %}selected{% endif %}>随机搜索</option>
+                                                        <option value="bayesian" {% if config.backtest.optimization_method == 'bayesian' %}selected{% endif %}>贝叶斯优化</option>
+                                                        <option value="genetic" {% if config.backtest.optimization_method == 'genetic' %}selected{% endif %}>遗传算法</option>
+                                                    </select>
+                                                    <div class="form-text">参数优化使用的算法</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="evaluation_metric" class="form-label">评估指标</label>
+                                                    <select class="form-select" id="evaluation_metric">
+                                                        <option value="sharpe_ratio" {% if config.backtest.evaluation_metric == 'sharpe_ratio' %}selected{% endif %}>夏普比率</option>
+                                                        <option value="sortino_ratio" {% if config.backtest.evaluation_metric == 'sortino_ratio' %}selected{% endif %}>索提诺比率</option>
+                                                        <option value="max_drawdown" {% if config.backtest.evaluation_metric == 'max_drawdown' %}selected{% endif %}>最大回撤</option>
+                                                        <option value="total_return" {% if config.backtest.evaluation_metric == 'total_return' %}selected{% endif %}>总收益率</option>
+                                                        <option value="annual_return" {% if config.backtest.evaluation_metric == 'annual_return' %}selected{% endif %}>年化收益率</option>
+                                                        <option value="win_rate" {% if config.backtest.evaluation_metric == 'win_rate' %}selected{% endif %}>胜率</option>
+                                                        <option value="profit_factor" {% if config.backtest.evaluation_metric == 'profit_factor' %}selected{% endif %}>盈亏比</option>
+                                                        <option value="custom" {% if config.backtest.evaluation_metric == 'custom' %}selected{% endif %}>自定义</option>
+                                                    </select>
+                                                    <div class="form-text">参数优化的评估指标</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 text-center">
+                            <button type="submit" class="btn btn-primary">保存设置</button>
+                            <button type="button" class="btn btn-secondary ms-2" id="resetDefaultsBtn">恢复默认</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // 提交表单
+        $("#backtestSettingsForm").submit(function(e) {
+            e.preventDefault();
+            
+            // 收集表单数据
+            const formData = {
+                initial_capital: parseFloat($("#initial_capital").val()),
+                commission_rate: parseFloat($("#commission_rate").val()),
+                slippage: parseFloat($("#slippage").val()),
+                data_source_priority: $("#data_source_priority").val(),
+                max_threads: parseInt($("#max_threads").val()),
+                enable_detailed_logs: $("#enable_detailed_logs").is(":checked"),
+                save_trade_records: $("#save_trade_records").is(":checked"),
+                generate_visualization: $("#generate_visualization").is(":checked"),
+                auto_save_results: $("#auto_save_results").is(":checked"),
+                results_storage_path: $("#results_storage_path").val(),
+                max_results_saved: parseInt($("#max_results_saved").val()),
+                optimization_method: $("#optimization_method").val(),
+                evaluation_metric: $("#evaluation_metric").val()
+            };
+            
+            // 发送AJAX请求保存设置
+            $.ajax({
+                url: "/api/settings/backtest",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if (response.success) {
+                        alert("回测设置已保存！");
+                    } else {
+                        alert("保存失败：" + response.message);
+                    }
+                },
+                error: function(error) {
+                    alert("请求错误：" + error.statusText);
+                }
+            });
+        });
+        
+        // 恢复默认设置
+        $("#resetDefaultsBtn").click(function() {
+            if (confirm("确定要恢复默认设置吗？当前的设置将被覆盖。")) {
+                $("#initial_capital").val(1000000);
+                $("#commission_rate").val(0.0003);
+                $("#slippage").val(0.0001);
+                $("#data_source_priority").val("local_first");
+                $("#max_threads").val(4);
+                $("#enable_detailed_logs").prop("checked", false);
+                $("#save_trade_records").prop("checked", true);
+                $("#generate_visualization").prop("checked", true);
+                $("#auto_save_results").prop("checked", true);
+                $("#results_storage_path").val("./backtest_results");
+                $("#max_results_saved").val(100);
+                $("#optimization_method").val("grid_search");
+                $("#evaluation_metric").val("sharpe_ratio");
+            }
+        });
+    });
+</script>
+{% endblock %} 

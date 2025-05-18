@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+
+{% block title %}交易设置 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">交易系统设置</h2>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">交易模式配置</h5>
+                </div>
+                <div class="card-body">
+                    <form id="tradingSettingsForm">
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    <strong>交易风险提示：</strong> 实盘交易涉及真实资金操作，请确保您已充分了解系统的交易逻辑和风险控制机制。建议先使用模拟交易模式进行充分测试。
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enable_trading" {% if config.trade.enable_trading %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_trading">启用自动交易</label>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="trading_mode" class="form-label">交易模式</label>
+                                    <select class="form-select" id="trading_mode">
+                                        <option value="simulated" {% if config.trade.default_mode == 'simulated' %}selected{% endif %}>模拟交易</option>
+                                        <option value="paper" {% if config.trade.default_mode == 'paper' %}selected{% endif %}>纸面交易</option>
+                                        <option value="real" {% if config.trade.default_mode == 'real' %}selected{% endif %}>实盘交易</option>
+                                    </select>
+                                    <div class="form-text">模拟交易不执行实际交易；纸面交易通过API提交订单但不实际执行；实盘交易将执行真实资金交易。</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 证券交易账户设置 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header bg-light">证券交易账户设置</div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="stock_broker" class="form-label">券商选择</label>
+                                                    <select class="form-select" id="stock_broker">
+                                                        <option value="" {% if not config.trade.stock_broker %}selected{% endif %}>不使用</option>
+                                                        <option value="eastmoney" {% if config.trade.stock_broker == 'eastmoney' %}selected{% endif %}>东方财富</option>
+                                                        <option value="futu" {% if config.trade.stock_broker == 'futu' %}selected{% endif %}>富途证券</option>
+                                                        <option value="tiger" {% if config.trade.stock_broker == 'tiger' %}selected{% endif %}>老虎证券</option>
+                                                        <option value="custom" {% if config.trade.stock_broker == 'custom' %}selected{% endif %}>自定义</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="stock_account_type" class="form-label">账户类型</label>
+                                                    <select class="form-select" id="stock_account_type">
+                                                        <option value="normal" {% if config.trade.stock_account_type == 'normal' %}selected{% endif %}>普通账户</option>
+                                                        <option value="margin" {% if config.trade.stock_account_type == 'margin' %}selected{% endif %}>融资融券账户</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div id="stock_broker_settings">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="stock_api_key" class="form-label">API密钥</label>
+                                                        <input type="password" class="form-control" id="stock_api_key" value="{{ config.trade.stock_api_key|default('') }}">
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="stock_api_secret" class="form-label">API密钥秘钥</label>
+                                                        <input type="password" class="form-control" id="stock_api_secret" value="{{ config.trade.stock_api_secret|default('') }}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="stock_api_url" class="form-label">API服务地址</label>
+                                                        <input type="text" class="form-control" id="stock_api_url" value="{{ config.trade.stock_api_url|default('') }}">
+                                                        <div class="form-text">API服务器地址，留空则使用默认地址</div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <div class="form-check form-switch mt-4">
+                                                            <input class="form-check-input" type="checkbox" id="stock_test_mode" {% if config.trade.stock_test_mode %}checked{% endif %}>
+                                                            <label class="form-check-label" for="stock_test_mode">测试模式</label>
+                                                        </div>
+                                                        <div class="form-text">启用测试模式可在不影响实际账户的情况下测试API连接</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" class="btn btn-outline-primary" id="testStockApi">测试连接</button>
+                                            </div>
+                                            
+                                            <div id="stockApiTestResult" class="mt-3"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 加密货币交易账户设置 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header bg-light">加密货币交易账户设置</div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="crypto_exchange" class="form-label">交易所选择</label>
+                                                    <select class="form-select" id="crypto_exchange">
+                                                        <option value="" {% if not config.trade.crypto_exchange %}selected{% endif %}>不使用</option>
+                                                        <option value="binance" {% if config.trade.crypto_exchange == 'binance' %}selected{% endif %}>币安 Binance</option>
+                                                        <option value="okex" {% if config.trade.crypto_exchange == 'okex' %}selected{% endif %}>OKEx</option>
+                                                        <option value="huobi" {% if config.trade.crypto_exchange == 'huobi' %}selected{% endif %}>火币 Huobi</option>
+                                                        <option value="ftx" {% if config.trade.crypto_exchange == 'ftx' %}selected{% endif %}>FTX</option>
+                                                        <option value="custom" {% if config.trade.crypto_exchange == 'custom' %}selected{% endif %}>自定义</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="crypto_market_type" class="form-label">市场类型</label>
+                                                    <select class="form-select" id="crypto_market_type">
+                                                        <option value="spot" {% if config.trade.crypto_market_type == 'spot' %}selected{% endif %}>现货市场</option>
+                                                        <option value="futures" {% if config.trade.crypto_market_type == 'futures' %}selected{% endif %}>期货市场</option>
+                                                        <option value="margin" {% if config.trade.crypto_market_type == 'margin' %}selected{% endif %}>杠杆市场</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div id="crypto_exchange_settings">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="crypto_api_key" class="form-label">API密钥</label>
+                                                        <input type="password" class="form-control" id="crypto_api_key" value="{{ config.trade.crypto_api_key|default('') }}">
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="crypto_api_secret" class="form-label">API密钥秘钥</label>
+                                                        <input type="password" class="form-control" id="crypto_api_secret" value="{{ config.trade.crypto_api_secret|default('') }}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="crypto_passphrase" class="form-label">密码短语</label>
+                                                        <input type="password" class="form-control" id="crypto_passphrase" value="{{ config.trade.crypto_passphrase|default('') }}">
+                                                        <div class="form-text">部分交易所需要额外的密码短语（如OKEx）</div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <div class="form-check form-switch mt-4">
+                                                            <input class="form-check-input" type="checkbox" id="crypto_test_network" {% if config.trade.crypto_test_network %}checked{% endif %}>
+                                                            <label class="form-check-label" for="crypto_test_network">使用测试网络</label>
+                                                        </div>
+                                                        <div class="form-text">使用交易所提供的测试网络，不会涉及真实资金</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" class="btn btn-outline-primary" id="testCryptoApi">测试连接</button>
+                                            </div>
+                                            
+                                            <div id="cryptoApiTestResult" class="mt-3"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 交易执行设置 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header bg-light">交易执行设置</div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="order_type" class="form-label">默认订单类型</label>
+                                                    <select class="form-select" id="order_type">
+                                                        <option value="market" {% if config.trade.order_type == 'market' %}selected{% endif %}>市价单</option>
+                                                        <option value="limit" {% if config.trade.order_type == 'limit' %}selected{% endif %}>限价单</option>
+                                                    </select>
+                                                    <div class="form-text">市价单立即成交，限价单按指定价格成交</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="price_deviation" class="form-label">价格偏差容忍度</label>
+                                                    <div class="input-group">
+                                                        <input type="number" class="form-control" id="price_deviation" step="0.0001" min="0" max="0.05" value="{{ config.trade.price_deviation|default(0.001) }}">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                    <div class="form-text">限价单下单时允许的价格偏差比例</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="max_retries" class="form-label">下单最大重试次数</label>
+                                                    <input type="number" class="form-control" id="max_retries" min="0" max="10" value="{{ config.trade.max_retries|default(3) }}">
+                                                    <div class="form-text">下单失败时的最大重试次数</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="retry_interval" class="form-label">重试间隔(秒)</label>
+                                                    <input type="number" class="form-control" id="retry_interval" min="1" max="60" value="{{ config.trade.retry_interval|default(5) }}">
+                                                    <div class="form-text">下单失败重试的时间间隔(秒)</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 text-center">
+                            <button type="submit" class="btn btn-primary">保存设置</button>
+                            <button type="button" class="btn btn-secondary ms-2" id="resetDefaultsBtn">恢复默认</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // 根据券商选择显示/隐藏API设置
+        $("#stock_broker").change(function() {
+            if ($(this).val() === "") {
+                $("#stock_broker_settings").hide();
+            } else {
+                $("#stock_broker_settings").show();
+            }
+        }).trigger("change");
+        
+        // 根据交易所选择显示/隐藏API设置
+        $("#crypto_exchange").change(function() {
+            if ($(this).val() === "") {
+                $("#crypto_exchange_settings").hide();
+            } else {
+                $("#crypto_exchange_settings").show();
+            }
+        }).trigger("change");
+        
+        // 测试股票API连接
+        $("#testStockApi").click(function() {
+            const broker = $("#stock_broker").val();
+            if (!broker || broker === "") {
+                showAlert("#stockApiTestResult", "请先选择券商", "warning");
+                return;
+            }
+            
+            const apiKey = $("#stock_api_key").val();
+            if (!apiKey) {
+                showAlert("#stockApiTestResult", "请输入API密钥", "warning");
+                return;
+            }
+            
+            showAlert("#stockApiTestResult", "正在测试连接，请稍候...", "info");
+            
+            $.ajax({
+                url: "/api/settings/test_stock_broker",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    broker: broker,
+                    api_key: apiKey,
+                    api_secret: $("#stock_api_secret").val(),
+                    api_url: $("#stock_api_url").val(),
+                    test_mode: $("#stock_test_mode").is(":checked")
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        showAlert("#stockApiTestResult", response.message, "success");
+                    } else {
+                        showAlert("#stockApiTestResult", response.message, "danger");
+                    }
+                },
+                error: function(error) {
+                    showAlert("#stockApiTestResult", "连接测试失败: " + error.statusText, "danger");
+                }
+            });
+        });
+        
+        // 测试加密货币API连接
+        $("#testCryptoApi").click(function() {
+            const exchange = $("#crypto_exchange").val();
+            if (!exchange || exchange === "") {
+                showAlert("#cryptoApiTestResult", "请先选择交易所", "warning");
+                return;
+            }
+            
+            const apiKey = $("#crypto_api_key").val();
+            if (!apiKey) {
+                showAlert("#cryptoApiTestResult", "请输入API密钥", "warning");
+                return;
+            }
+            
+            showAlert("#cryptoApiTestResult", "正在测试连接，请稍候...", "info");
+            
+            $.ajax({
+                url: "/api/settings/test_crypto_exchange",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    exchange: exchange,
+                    api_key: apiKey,
+                    api_secret: $("#crypto_api_secret").val(),
+                    passphrase: $("#crypto_passphrase").val(),
+                    test_network: $("#crypto_test_network").is(":checked"),
+                    market_type: $("#crypto_market_type").val()
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        showAlert("#cryptoApiTestResult", response.message, "success");
+                    } else {
+                        showAlert("#cryptoApiTestResult", response.message, "danger");
+                    }
+                },
+                error: function(error) {
+                    showAlert("#cryptoApiTestResult", "连接测试失败: " + error.statusText, "danger");
+                }
+            });
+        });
+        
+        // 提交表单
+        $("#tradingSettingsForm").submit(function(e) {
+            e.preventDefault();
+            
+            // 收集表单数据
+            const formData = {
+                enable_trading: $("#enable_trading").is(":checked"),
+                trading_mode: $("#trading_mode").val(),
+                stock_broker: $("#stock_broker").val(),
+                stock_account_type: $("#stock_account_type").val(),
+                stock_api_key: $("#stock_api_key").val(),
+                stock_api_secret: $("#stock_api_secret").val(),
+                stock_api_url: $("#stock_api_url").val(),
+                stock_test_mode: $("#stock_test_mode").is(":checked"),
+                crypto_exchange: $("#crypto_exchange").val(),
+                crypto_market_type: $("#crypto_market_type").val(),
+                crypto_api_key: $("#crypto_api_key").val(),
+                crypto_api_secret: $("#crypto_api_secret").val(),
+                crypto_passphrase: $("#crypto_passphrase").val(),
+                crypto_test_network: $("#crypto_test_network").is(":checked"),
+                order_type: $("#order_type").val(),
+                price_deviation: parseFloat($("#price_deviation").val()),
+                max_retries: parseInt($("#max_retries").val()),
+                retry_interval: parseInt($("#retry_interval").val())
+            };
+            
+            // 发送AJAX请求保存设置
+            $.ajax({
+                url: "/api/settings/trading",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if (response.success) {
+                        alert("交易设置已保存！");
+                    } else {
+                        alert("保存失败：" + response.message);
+                    }
+                },
+                error: function(error) {
+                    alert("请求错误：" + error.statusText);
+                }
+            });
+        });
+        
+        // 恢复默认设置
+        $("#resetDefaultsBtn").click(function() {
+            if (confirm("确定要恢复默认设置吗？当前的设置将被覆盖。")) {
+                $("#enable_trading").prop("checked", false);
+                $("#trading_mode").val("simulated");
+                $("#stock_broker").val("").trigger("change");
+                $("#stock_account_type").val("normal");
+                $("#stock_api_key").val("");
+                $("#stock_api_secret").val("");
+                $("#stock_api_url").val("");
+                $("#stock_test_mode").prop("checked", true);
+                $("#crypto_exchange").val("").trigger("change");
+                $("#crypto_market_type").val("spot");
+                $("#crypto_api_key").val("");
+                $("#crypto_api_secret").val("");
+                $("#crypto_passphrase").val("");
+                $("#crypto_test_network").prop("checked", true);
+                $("#order_type").val("market");
+                $("#price_deviation").val(0.001);
+                $("#max_retries").val(3);
+                $("#retry_interval").val(5);
+            }
+        });
+        
+        // 显示警告信息的函数
+        function showAlert(target, message, type) {
+            $(target).html(`
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `);
+        }
+    });
+</script>
+{% endblock %} 

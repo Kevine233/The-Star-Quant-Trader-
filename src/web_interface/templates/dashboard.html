@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}仪表盘 - The Star{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-4 mb-4">系统仪表盘</h1>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    系统状态
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for component, status in system_status.items() %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ component }}
+                            <span class="badge bg-success">{{ status }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    系统信息
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            系统版本
+                            <span class="badge bg-primary">{{ system_version }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            运行时间
+                            <span class="badge bg-info">{{ uptime }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            CPU使用率
+                            <div class="progress" style="width: 50%">
+                                <div class="progress-bar" role="progressbar" style="width: {{ cpu_usage }}%">{{ cpu_usage }}%</div>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            内存使用率
+                            <div class="progress" style="width: 50%">
+                                <div class="progress-bar" role="progressbar" style="width: {{ memory_usage }}%">{{ memory_usage }}%</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    账户信息
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            账户余额
+                            <span class="badge bg-success">{{ account_info.balance }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            持仓市值
+                            <span class="badge bg-info">{{ account_info.equity - account_info.balance if account_info.equity is defined else 0 }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            账户净值
+                            <span class="badge bg-primary">{{ account_info.equity }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            可用资金
+                            <span class="badge bg-warning">{{ account_info.available }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    当前持仓
+                </div>
+                <div class="card-body">
+                    {% if positions %}
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>标的</th>
+                                <th>方向</th>
+                                <th>数量</th>
+                                <th>价格</th>
+                                <th>市值</th>
+                                <th>盈亏</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for symbol, position in positions.items() %}
+                            <tr>
+                                <td>{{ position.symbol }}</td>
+                                <td>{{ position.direction }}</td>
+                                <td>{{ position.quantity }}</td>
+                                <td>{{ position.avg_price }}</td>
+                                <td>{{ position.market_value }}</td>
+                                <td class="{% if position.unrealized_pnl > 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ position.unrealized_pnl }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-center">当前无持仓</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    系统日志
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px; overflow-y: auto;">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>级别</th>
+                                    <th>消息</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in latest_logs %}
+                                <tr>
+                                    <td>{{ log.timestamp }}</td>
+                                    <td>
+                                        <span class="badge {% if log.level == 'info' %}bg-info{% elif log.level == 'warning' %}bg-warning{% elif log.level == 'error' %}bg-danger{% endif %}">
+                                            {{ log.level }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.message }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

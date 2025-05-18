@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}新建回测 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">新建回测</h2>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>回测配置</h5>
+        </div>
+        <div class="card-body">
+            <form id="backtestForm">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">基本参数</div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="market" class="form-label">选择市场</label>
+                                    <select class="form-select" id="market" name="market">
+                                        <option value="stock">A股市场</option>
+                                        <option value="crypto">加密货币市场</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="symbol" class="form-label">交易对/股票代码</label>
+                                    <input type="text" class="form-control" id="symbol" placeholder="例如: BTC/USDT 或 000001">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="start_date" class="form-label">开始日期</label>
+                                    <input type="date" class="form-control" id="start_date">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="end_date" class="form-label">结束日期</label>
+                                    <input type="date" class="form-control" id="end_date">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="initial_capital" class="form-label">初始资金</label>
+                                    <input type="number" class="form-control" id="initial_capital" value="1000000">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">策略参数</div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="strategy" class="form-label">选择策略</label>
+                                    <select class="form-select" id="strategy" name="strategy">
+                                        <option value="smart_money">庄家行为识别策略</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="volume_threshold" class="form-label">成交量异常阈值</label>
+                                    <input type="number" class="form-control" id="volume_threshold" step="0.1" value="3.0">
+                                    <div class="form-text">标记成交量异常的标准差倍数</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="price_manipulation_window" class="form-label">价格操纵检测窗口</label>
+                                    <input type="number" class="form-control" id="price_manipulation_window" value="20">
+                                    <div class="form-text">价格操纵检测的历史数据窗口大小</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="manipulation_score_threshold" class="form-label">操纵评分阈值</label>
+                                    <input type="number" class="form-control" id="manipulation_score_threshold" value="70">
+                                    <div class="form-text">触发庄家操纵警报的最小分数</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header bg-light">交易参数</div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="commission_rate" class="form-label">手续费率</label>
+                                            <input type="number" class="form-control" id="commission_rate" step="0.0001" value="0.0003">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="slippage" class="form-label">滑点</label>
+                                            <input type="number" class="form-control" id="slippage" step="0.0001" value="0.0001">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="risk_control" class="form-label">风险控制</label>
+                                            <select class="form-select" id="risk_control" name="risk_control">
+                                                <option value="true">启用</option>
+                                                <option value="false">禁用</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <button type="submit" class="btn btn-primary">开始回测</button>
+                    <button type="reset" class="btn btn-secondary ms-2">重置</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // 回测表单提交
+        $("#backtestForm").submit(function(e) {
+            e.preventDefault();
+            alert("回测功能即将上线，敬请期待！");
+        });
+        
+        // 市场选择变化时更新符号占位符
+        $("#market").change(function() {
+            if ($(this).val() == "stock") {
+                $("#symbol").attr("placeholder", "例如: 000001");
+            } else {
+                $("#symbol").attr("placeholder", "例如: BTC/USDT");
+            }
+        });
+    });
+</script>
+{% endblock %} 

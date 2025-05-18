@@ -1,0 +1,955 @@
+{% extends "base.html" %}
+{% block title %}交易系统 - 跟随庄家自动交易系统{% endblock %}
+
+{% block head %}
+<style>
+    .badge-profit { background-color: #28a745; color: white; }
+    .badge-loss { background-color: #dc3545; color: white; }
+    .trading-card { height: 100%; }
+    .small-text { font-size: 0.85rem; }
+    .account-item { padding: 0.5rem 1rem; border-bottom: 1px solid #eee; }
+    .account-item:last-child { border-bottom: none; }
+    .risk-item { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+    .market-select { margin-bottom: 1rem; }
+    .table-fixed { table-layout: fixed; }
+    .table-fixed td { word-wrap: break-word; overflow-wrap: break-word; }
+    .trading-mode-badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 0.2rem 0.5rem;
+        font-size: 0.7rem;
+        border-radius: 0 0 0 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mt-4 mb-4">交易系统
+        {% if trading_mode == "simulated" %}
+        <span class="badge bg-warning">模拟交易</span>
+        {% else %}
+        <span class="badge bg-danger">实盘交易</span>
+        {% endif %}
+    </h1>
+
+    <div class="row mb-4">
+        <!-- 账户信息 -->
+        <div class="col-md-3">
+            <div class="card trading-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">账户信息</h5>
+                    <button class="btn btn-sm btn-outline-primary" id="refreshAccount">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="account-item">
+                        <div class="d-flex justify-content-between">
+                            <span>可用资金:</span>
+                            <span class="fw-bold">￥<span id="availableCash">{{ account_info.cash|default('0.00')|float|round(2) }}</span></span>
+                        </div>
+                    </div>
+                    <div class="account-item">
+                        <div class="d-flex justify-content-between">
+                            <span>持仓市值:</span>
+                            <span class="fw-bold">￥<span id="positionValue">{{ (account_info.total_value|default(0) - account_info.cash|default(0))|float|round(2) }}</span></span>
+                        </div>
+                    </div>
+                    <div class="account-item">
+                        <div class="d-flex justify-content-between">
+                            <span>总资产:</span>
+                            <span class="fw-bold">￥<span id="totalValue">{{ account_info.total_value|default('0.00')|float|round(2) }}</span></span>
+                        </div>
+                    </div>
+                    <div class="account-item">
+                        <div class="d-flex justify-content-between">
+                            <span>已实现盈亏:</span>
+                            <span class="fw-bold" id="realizedPnlContainer">
+                                ￥<span id="realizedPnl" class="{% if account_info.realized_pnl|default(0) >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ account_info.realized_pnl|default('0.00')|float|round(2) }}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="account-item">
+                        <div class="d-flex justify-content-between">
+                            <span>未实现盈亏:</span>
+                            <span class="fw-bold" id="unrealizedPnlContainer">
+                                ￥<span id="unrealizedPnl" class="{% if account_info.unrealized_pnl|default(0) >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ account_info.unrealized_pnl|default('0.00')|float|round(2) }}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 风险报告 -->
+        <div class="col-md-3">
+            <div class="card trading-card">
+                <div class="card-header">
+                    <h5 class="mb-0">风险报告</h5>
+                </div>
+                <div class="card-body">
+                    {% if risk_report %}
+                    <div class="risk-item">
+                        <span>风险级别:</span>
+                        <span class="badge {% if risk_report.risk_level == 'low' %}bg-success{% elif risk_report.risk_level == 'medium' %}bg-warning{% elif risk_report.risk_level == 'high' %}bg-danger{% else %}bg-dark{% endif %}">
+                            {{ risk_report.risk_level|default('未知') }}
+                        </span>
+                    </div>
+                    <div class="risk-item">
+                        <span>当前回撤:</span>
+                        <span>{{ (risk_report.current_drawdown|default(0) * 100)|float|round(2) }}%</span>
+                    </div>
+                    <div class="risk-item">
+                        <span>最大回撤:</span>
+                        <span>{{ (risk_report.max_drawdown|default(0) * 100)|float|round(2) }}%</span>
+                    </div>
+                    <div class="risk-item">
+                        <span>波动率:</span>
+                        <span>{{ (risk_report.portfolio_volatility|default(0) * 100)|float|round(2) }}%</span>
+                    </div>
+                    <div class="risk-item">
+                        <span>夏普比率:</span>
+                        <span>{{ risk_report.sharpe_ratio|default(0)|float|round(2) }}</span>
+                    </div>
+                    <div class="risk-item">
+                        <span>总持仓比例:</span>
+                        <span>{{ (risk_report.total_position_ratio|default(0) * 100)|float|round(2) }}%</span>
+                    </div>
+                    <div class="risk-item">
+                        <span>最大单一持仓:</span>
+                        <span>{{ (risk_report.max_single_position_ratio|default(0) * 100)|float|round(2) }}%</span>
+                    </div>
+                    {% if risk_report.warnings %}
+                    <div class="alert alert-warning mt-3 small-text">
+                        <strong>风险提示:</strong>
+                        <ul class="mb-0">
+                            {% for warning in risk_report.warnings %}
+                            <li>{{ warning }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <p class="text-center">暂无风险报告数据</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 交易摘要 -->
+        <div class="col-md-3">
+            <div class="card trading-card">
+                <div class="card-header">
+                    <h5 class="mb-0">交易摘要</h5>
+                </div>
+                <div class="card-body">
+                    {% if trade_summary %}
+                    <div class="risk-item">
+                        <span>总交易次数:</span>
+                        <span>{{ trade_summary.total_trades|default(0) }}</span>
+                    </div>
+                    <div class="risk-item">
+                        <span>买入交易:</span>
+                        <span>{{ trade_summary.buy_trades|default(0) }}</span>
+                    </div>
+                    <div class="risk-item">
+                        <span>卖出交易:</span>
+                        <span>{{ trade_summary.sell_trades|default(0) }}</span>
+                    </div>
+                    <div class="risk-item">
+                        <span>总佣金:</span>
+                        <span>￥{{ trade_summary.total_commission|default(0)|float|round(2) }}</span>
+                    </div>
+                    <div class="risk-item">
+                        <span>总交易额:</span>
+                        <span>￥{{ trade_summary.total_volume|default(0)|float|round(2) }}</span>
+                    </div>
+                    <div class="risk-item">
+                        <span>交易品种:</span>
+                        <span>{{ trade_summary.symbols_traded|default([])|length }}</span>
+                    </div>
+                    <div class="mt-3">
+                        <h6>交易品种:</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for symbol in trade_summary.symbols_traded|default([]) %}
+                            <span class="badge bg-secondary">{{ symbol }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-center">暂无交易摘要数据</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 交易面板 -->
+        <div class="col-md-3">
+            <div class="card trading-card">
+                <div class="card-header">
+                    <h5 class="mb-0">交易面板</h5>
+                    {% if trading_mode == "simulated" %}
+                    <span class="trading-mode-badge bg-warning text-dark">模拟交易模式</span>
+                    {% else %}
+                    <span class="trading-mode-badge bg-danger">实盘交易模式</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <form id="placeOrderForm">
+                        <div class="mb-3">
+                            <label for="symbol" class="form-label">交易品种</label>
+                            <input type="text" class="form-control" id="symbol" placeholder="例如：AAPL" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="orderType" class="form-label">订单类型</label>
+                            <select class="form-select" id="orderType" required>
+                                <option value="market">市价单</option>
+                                <option value="limit">限价单</option>
+                                <option value="stop">止损单</option>
+                                <option value="stop_limit">止损限价单</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="direction" class="form-label">交易方向</label>
+                            <select class="form-select" id="direction" required>
+                                <option value="buy">买入</option>
+                                <option value="sell">卖出</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">交易数量</label>
+                            <input type="number" class="form-control" id="quantity" min="1" step="1" required>
+                        </div>
+                        <div class="mb-3 price-field">
+                            <label for="price" class="form-label">价格</label>
+                            <input type="number" class="form-control" id="price" min="0" step="0.01">
+                        </div>
+                        <div class="mb-3 stop-price-field d-none">
+                            <label for="stopPrice" class="form-label">止损价格</label>
+                            <input type="number" class="form-control" id="stopPrice" min="0" step="0.01">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">下单</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 持仓列表 -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">当前持仓</h5>
+                    <button class="btn btn-sm btn-outline-primary" id="refreshPositions">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover table-fixed">
+                            <thead>
+                                <tr>
+                                    <th>品种</th>
+                                    <th>数量</th>
+                                    <th>成本价</th>
+                                    <th>当前价</th>
+                                    <th>市值</th>
+                                    <th>盈亏</th>
+                                    <th>盈亏%</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="positionsTableBody">
+                                {% if positions %}
+                                {% for symbol, position in positions.items() %}
+                                <tr>
+                                    <td>{{ position.symbol }}</td>
+                                    <td>{{ position.quantity }}</td>
+                                    <td>{{ position.average_price|default(0)|float|round(2) }}</td>
+                                    <td>{{ position.current_price|default(0)|float|round(2) }}</td>
+                                    <td>{{ (position.quantity|default(0) * position.current_price|default(0))|float|round(2) }}</td>
+                                    <td class="{% if position.unrealized_pnl|default(0) > 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ position.unrealized_pnl|default(0)|float|round(2) }}
+                                    </td>
+                                    <td class="{% if (position.current_price|default(0) / position.average_price|default(1) - 1) * 100 > 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if position.average_price|default(0) > 0 %}
+                                            {{ ((position.current_price|default(0) / position.average_price - 1) * 100)|float|round(2) }}%
+                                        {% else %}
+                                            0.00%
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger sell-btn"
+                                                data-symbol="{{ position.symbol }}"
+                                                data-quantity="{{ position.quantity }}"
+                                                data-price="{{ position.current_price|default(0) }}">
+                                            卖出
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center">暂无持仓</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 订单列表 -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">当前订单</h5>
+                    <button class="btn btn-sm btn-outline-primary" id="refreshOrders">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover table-fixed">
+                            <thead>
+                                <tr>
+                                    <th>订单ID</th>
+                                    <th>品种</th>
+                                    <th>类型</th>
+                                    <th>方向</th>
+                                    <th>数量</th>
+                                    <th>价格</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                {% if orders %}
+                                {% for order_id, order in orders.items() %}
+                                <tr>
+                                    <td title="{{ order.order_id }}">{{ order.order_id[:8] }}...</td>
+                                    <td>{{ order.symbol }}</td>
+                                    <td>
+                                        {% if order.order_type == 'market' %}市价单
+                                        {% elif order.order_type == 'limit' %}限价单
+                                        {% elif order.order_type == 'stop' %}止损单
+                                        {% elif order.order_type == 'stop_limit' %}止损限价单
+                                        {% else %}{{ order.order_type }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if order.direction == 'buy' %}
+                                        <span class="badge bg-success">买入</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">卖出</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ order.quantity }}</td>
+                                    <td>{{ order.price|default('-') }}</td>
+                                    <td>
+                                        {% if order.status == 'created' %}
+                                        <span class="badge bg-secondary">已创建</span>
+                                        {% elif order.status == 'submitted' %}
+                                        <span class="badge bg-primary">已提交</span>
+                                        {% elif order.status == 'filled' %}
+                                        <span class="badge bg-success">已成交</span>
+                                        {% elif order.status == 'partially_filled' %}
+                                        <span class="badge bg-info">部分成交</span>
+                                        {% elif order.status == 'canceled' %}
+                                        <span class="badge bg-warning">已取消</span>
+                                        {% elif order.status == 'rejected' %}
+                                        <span class="badge bg-danger">已拒绝</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ order.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if order.status in ['created', 'submitted', 'partially_filled'] %}
+                                        <button class="btn btn-sm btn-warning cancel-btn" data-order-id="{{ order.order_id }}">
+                                            取消
+                                        </button>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center">暂无订单</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 模态框 - 下单确认 -->
+<div class="modal fade" id="orderConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">下单确认</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>您确定要执行以下交易吗？</p>
+                <div class="card">
+                    <div class="card-body">
+                        <p><strong>品种:</strong> <span id="confirmSymbol"></span></p>
+                        <p><strong>方向:</strong> <span id="confirmDirection"></span></p>
+                        <p><strong>类型:</strong> <span id="confirmOrderType"></span></p>
+                        <p><strong>数量:</strong> <span id="confirmQuantity"></span></p>
+                        <p><strong>价格:</strong> <span id="confirmPrice"></span></p>
+                        <p><strong>预估金额:</strong> <span id="confirmAmount"></span></p>
+                    </div>
+                </div>
+                <div class="alert alert-warning mt-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> 请确认交易信息无误，提交后将立即执行。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmOrderBtn">确认下单</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 模态框 - 通知 -->
+<div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="notificationTitle">通知</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="notificationMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 模态框 - 卖出确认 -->
+<div class="modal fade" id="sellConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">卖出确认</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>您确定要卖出以下持仓吗？</p>
+                <div class="card">
+                    <div class="card-body">
+                        <p><strong>品种:</strong> <span id="sellSymbol"></span></p>
+                        <p><strong>数量:</strong> <span id="sellQuantity"></span></p>
+                        <p><strong>当前价格:</strong> <span id="sellPrice"></span></p>
+                        <p><strong>预估金额:</strong> <span id="sellAmount"></span></p>
+                    </div>
+                </div>
+
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="sellPartial">
+                    <label class="form-check-label" for="sellPartial">
+                        部分卖出
+                    </label>
+                </div>
+
+                <div class="mb-3 d-none" id="partialQuantityDiv">
+                    <label for="partialQuantity" class="form-label">卖出数量</label>
+                    <input type="number" class="form-control" id="partialQuantity" min="1">
+                </div>
+
+                <div class="alert alert-warning mt-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> 请确认卖出信息无误，提交后将立即执行。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmSellBtn">确认卖出</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 全局变量
+    let orderFormData = {};
+    let sellPositionData = {};
+
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化Bootstrap工具提示
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // 根据订单类型显示/隐藏价格字段
+        const orderTypeSelect = document.getElementById('orderType');
+        const priceField = document.querySelector('.price-field');
+        const stopPriceField = document.querySelector('.stop-price-field');
+
+        orderTypeSelect.addEventListener('change', function() {
+            const orderType = this.value;
+
+            if (orderType === 'market') {
+                priceField.classList.add('d-none');
+                stopPriceField.classList.add('d-none');
+            } else if (orderType === 'limit') {
+                priceField.classList.remove('d-none');
+                stopPriceField.classList.add('d-none');
+            } else if (orderType === 'stop') {
+                priceField.classList.add('d-none');
+                stopPriceField.classList.remove('d-none');
+            } else if (orderType === 'stop_limit') {
+                priceField.classList.remove('d-none');
+                stopPriceField.classList.remove('d-none');
+            }
+        });
+
+        // 监听下单表单提交
+        const placeOrderForm = document.getElementById('placeOrderForm');
+        placeOrderForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // 收集表单数据
+            const symbol = document.getElementById('symbol').value;
+            const orderType = document.getElementById('orderType').value;
+            const direction = document.getElementById('direction').value;
+            const quantity = parseFloat(document.getElementById('quantity').value);
+            const price = document.getElementById('price').value ? parseFloat(document.getElementById('price').value) : null;
+            const stopPrice = document.getElementById('stopPrice').value ? parseFloat(document.getElementById('stopPrice').value) : null;
+
+            // 验证表单数据
+            if (!symbol) {
+                showNotification('错误', '请输入交易品种');
+                return;
+            }
+
+            if (quantity <= 0) {
+                showNotification('错误', '交易数量必须大于0');
+                return;
+            }
+
+            if ((orderType === 'limit' || orderType === 'stop_limit') && (!price || price <= 0)) {
+                showNotification('错误', '限价单必须指定有效的价格');
+                return;
+            }
+
+            if ((orderType === 'stop' || orderType === 'stop_limit') && (!stopPrice || stopPrice <= 0)) {
+                showNotification('错误', '止损单必须指定有效的止损价格');
+                return;
+            }
+
+            // 存储表单数据
+            orderFormData = {
+                symbol: symbol,
+                order_type: orderType,
+                direction: direction,
+                quantity: quantity,
+                price: price,
+                stop_price: stopPrice
+            };
+
+            // 更新确认模态框内容
+            document.getElementById('confirmSymbol').textContent = symbol;
+            document.getElementById('confirmDirection').textContent = direction === 'buy' ? '买入' : '卖出';
+            document.getElementById('confirmOrderType').textContent = orderTypeToText(orderType);
+            document.getElementById('confirmQuantity').textContent = quantity;
+            document.getElementById('confirmPrice').textContent = price ? `￥${price}` : (stopPrice ? `止损价 ￥${stopPrice}` : '市价');
+
+            // 计算预估金额
+            const estimatedPrice = price || stopPrice || 0;
+            const estimatedAmount = estimatedPrice * quantity;
+            document.getElementById('confirmAmount').textContent = `￥${estimatedAmount.toFixed(2)}`;
+
+            // 显示确认模态框
+            const orderConfirmModal = new bootstrap.Modal(document.getElementById('orderConfirmModal'));
+            orderConfirmModal.show();
+        });
+
+        // 确认下单按钮点击事件
+        document.getElementById('confirmOrderBtn').addEventListener('click', function() {
+            // 关闭确认模态框
+            const orderConfirmModal = bootstrap.Modal.getInstance(document.getElementById('orderConfirmModal'));
+            orderConfirmModal.hide();
+
+            // 发送下单请求
+            placeOrder(orderFormData);
+        });
+
+        // 刷新按钮点击事件
+        document.getElementById('refreshAccount').addEventListener('click', function() {
+            fetchAccountInfo();
+        });
+
+        document.getElementById('refreshPositions').addEventListener('click', function() {
+            fetchPositions();
+        });
+
+        document.getElementById('refreshOrders').addEventListener('click', function() {
+            fetchOrders();
+        });
+
+        // 监听卖出按钮点击事件（使用事件委托）
+        document.getElementById('positionsTableBody').addEventListener('click', function(e) {
+            if (e.target.classList.contains('sell-btn')) {
+                // 获取按钮上的数据
+                const symbol = e.target.getAttribute('data-symbol');
+                const quantity = parseFloat(e.target.getAttribute('data-quantity'));
+                const price = parseFloat(e.target.getAttribute('data-price'));
+
+                // 存储卖出数据
+                sellPositionData = {
+                    symbol: symbol,
+                    quantity: quantity,
+                    price: price
+                };
+
+                // 更新卖出确认模态框内容
+                document.getElementById('sellSymbol').textContent = symbol;
+                document.getElementById('sellQuantity').textContent = quantity;
+                document.getElementById('sellPrice').textContent = `￥${price.toFixed(2)}`;
+                document.getElementById('sellAmount').textContent = `￥${(price * quantity).toFixed(2)}`;
+
+                // 重置部分卖出选项
+                document.getElementById('sellPartial').checked = false;
+                document.getElementById('partialQuantityDiv').classList.add('d-none');
+                document.getElementById('partialQuantity').value = '';
+
+                // 显示卖出确认模态框
+                const sellConfirmModal = new bootstrap.Modal(document.getElementById('sellConfirmModal'));
+                sellConfirmModal.show();
+            }
+        });
+
+        // 部分卖出复选框变更事件
+        document.getElementById('sellPartial').addEventListener('change', function() {
+            const partialQuantityDiv = document.getElementById('partialQuantityDiv');
+            const partialQuantityInput = document.getElementById('partialQuantity');
+
+            if (this.checked) {
+                partialQuantityDiv.classList.remove('d-none');
+                partialQuantityInput.setAttribute('max', sellPositionData.quantity);
+                partialQuantityInput.value = Math.floor(sellPositionData.quantity / 2); // 默认设为一半
+            } else {
+                partialQuantityDiv.classList.add('d-none');
+            }
+        });
+
+        // 确认卖出按钮点击事件
+        document.getElementById('confirmSellBtn').addEventListener('click', function() {
+            // 获取卖出数量
+            let sellQuantity = sellPositionData.quantity;
+
+            if (document.getElementById('sellPartial').checked) {
+                sellQuantity = parseFloat(document.getElementById('partialQuantity').value);
+
+                // 验证部分卖出数量
+                if (!sellQuantity || sellQuantity <= 0 || sellQuantity > sellPositionData.quantity) {
+                    showNotification('错误', '请输入有效的卖出数量');
+                    return;
+                }
+            }
+
+            // 构建卖出订单
+            const sellOrder = {
+                symbol: sellPositionData.symbol,
+                order_type: 'market',
+                direction: 'sell',
+                quantity: sellQuantity
+            };
+
+            // 关闭卖出确认模态框
+            const sellConfirmModal = bootstrap.Modal.getInstance(document.getElementById('sellConfirmModal'));
+            sellConfirmModal.hide();
+
+            // 发送卖出请求
+            placeOrder(sellOrder);
+        });
+
+        // 监听取消订单按钮点击事件（使用事件委托）
+        document.getElementById('ordersTableBody').addEventListener('click', function(e) {
+            if (e.target.classList.contains('cancel-btn')) {
+                const orderId = e.target.getAttribute('data-order-id');
+                cancelOrder(orderId);
+            }
+        });
+
+        // 每30秒自动刷新一次数据
+        setInterval(function() {
+            fetchAccountInfo();
+            fetchPositions();
+            fetchOrders();
+        }, 30000);
+    });
+
+    // 下单函数
+    function placeOrder(orderData) {
+        fetch('/api/trading/place_order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(orderData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('下单成功', `订单已提交，订单ID: ${data.order_id}`);
+                // 刷新数据
+                fetchAccountInfo();
+                fetchPositions();
+                fetchOrders();
+                // 重置表单
+                document.getElementById('placeOrderForm').reset();
+            } else {
+                showNotification('下单失败', data.message || '未知错误');
+            }
+        })
+        .catch(error => {
+            console.error('下单请求错误:', error);
+            showNotification('下单失败', '网络错误，请稍后重试');
+        });
+    }
+
+    // 取消订单函数
+    function cancelOrder(orderId) {
+        fetch('/api/trading/cancel_order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ order_id: orderId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('取消成功', '订单已成功取消');
+                // 刷新订单列表
+                fetchOrders();
+            } else {
+                showNotification('取消失败', data.message || '未知错误');
+            }
+        })
+        .catch(error => {
+            console.error('取消订单请求错误:', error);
+            showNotification('取消失败', '网络错误，请稍后重试');
+        });
+    }
+
+    // 获取账户信息
+    function fetchAccountInfo() {
+        fetch('/api/trading/account')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const accountInfo = data.data;
+
+                // 更新账户信息
+                document.getElementById('availableCash').textContent = accountInfo.cash.toFixed(2);
+                document.getElementById('positionValue').textContent = (accountInfo.total_value - accountInfo.cash).toFixed(2);
+                document.getElementById('totalValue').textContent = accountInfo.total_value.toFixed(2);
+
+                // 更新盈亏
+                const realizedPnl = document.getElementById('realizedPnl');
+                realizedPnl.textContent = accountInfo.realized_pnl.toFixed(2);
+                realizedPnl.className = accountInfo.realized_pnl >= 0 ? 'text-success' : 'text-danger';
+
+                const unrealizedPnl = document.getElementById('unrealizedPnl');
+                unrealizedPnl.textContent = accountInfo.unrealized_pnl.toFixed(2);
+                unrealizedPnl.className = accountInfo.unrealized_pnl >= 0 ? 'text-success' : 'text-danger';
+            }
+        })
+        .catch(error => {
+            console.error('获取账户信息错误:', error);
+        });
+    }
+
+    // 获取持仓信息
+    function fetchPositions() {
+        fetch('/api/trading/positions')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const positions = data.data;
+                const tbody = document.getElementById('positionsTableBody');
+
+                // 清空当前内容
+                tbody.innerHTML = '';
+
+                if (positions && positions.length > 0) {
+                    // 添加持仓行
+                    positions.forEach(position => {
+                        const tr = document.createElement('tr');
+
+                        // 计算盈亏和盈亏比例
+                        const unrealizedPnl = position.unrealized_pnl || 0;
+                        const pnlPercent = ((position.current_price / position.average_price) - 1) * 100;
+
+                        tr.innerHTML = `
+                            <td>${position.symbol}</td>
+                            <td>${position.quantity}</td>
+                            <td>${position.average_price.toFixed(2)}</td>
+                            <td>${position.current_price.toFixed(2)}</td>
+                            <td>${(position.quantity * position.current_price).toFixed(2)}</td>
+                            <td class="${unrealizedPnl >= 0 ? 'text-success' : 'text-danger'}">${unrealizedPnl.toFixed(2)}</td>
+                            <td class="${pnlPercent >= 0 ? 'text-success' : 'text-danger'}">${pnlPercent.toFixed(2)}%</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger sell-btn"
+                                        data-symbol="${position.symbol}"
+                                        data-quantity="${position.quantity}"
+                                        data-price="${position.current_price}">
+                                    卖出
+                                </button>
+                            </td>
+                        `;
+
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    // 没有持仓时显示提示
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = '<td colspan="8" class="text-center">暂无持仓</td>';
+                    tbody.appendChild(tr);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('获取持仓信息错误:', error);
+        });
+    }
+
+    // 获取订单信息
+    function fetchOrders() {
+        fetch('/api/trading/orders')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const orders = data.data;
+                const tbody = document.getElementById('ordersTableBody');
+
+                // 清空当前内容
+                tbody.innerHTML = '';
+
+                if (orders && orders.length > 0) {
+                    // 添加订单行
+                    orders.forEach(order => {
+                        const tr = document.createElement('tr');
+
+                        // 订单状态翻译
+                        let statusText = '';
+                        let statusClass = '';
+
+                        switch(order.status) {
+                            case 'created':
+                                statusText = '已创建';
+                                statusClass = 'bg-secondary';
+                                break;
+                            case 'submitted':
+                                statusText = '已提交';
+                                statusClass = 'bg-primary';
+                                break;
+                            case 'filled':
+                                statusText = '已成交';
+                                statusClass = 'bg-success';
+                                break;
+                            case 'partially_filled':
+                                statusText = '部分成交';
+                                statusClass = 'bg-info';
+                                break;
+                            case 'canceled':
+                                statusText = '已取消';
+                                statusClass = 'bg-warning';
+                                break;
+                            case 'rejected':
+                                statusText = '已拒绝';
+                                statusClass = 'bg-danger';
+                                break;
+                            default:
+                                statusText = order.status;
+                                statusClass = 'bg-secondary';
+                        }
+
+                        // 订单类型翻译
+                        const orderTypeText = orderTypeToText(order.order_type);
+
+                        tr.innerHTML = `
+                            <td title="${order.order_id}">${order.order_id.substring(0, 8)}...</td>
+                            <td>${order.symbol}</td>
+                            <td>${orderTypeText}</td>
+                            <td>
+                                <span class="badge ${order.direction === 'buy' ? 'bg-success' : 'bg-danger'}">
+                                    ${order.direction === 'buy' ? '买入' : '卖出'}
+                                </span>
+                            </td>
+                            <td>${order.quantity}</td>
+                            <td>${order.price ? order.price.toFixed(2) : '-'}</td>
+                            <td><span class="badge ${statusClass}">${statusText}</span></td>
+                            <td>
+                                ${['created', 'submitted', 'partially_filled'].includes(order.status) ?
+                                `<button class="btn btn-sm btn-warning cancel-btn" data-order-id="${order.order_id}">取消</button>` :
+                                '-'}
+                            </td>
+                        `;
+
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    // 没有订单时显示提示
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = '<td colspan="8" class="text-center">暂无订单</td>';
+                    tbody.appendChild(tr);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('获取订单信息错误:', error);
+        });
+    }
+
+    // 显示通知模态框
+    function showNotification(title, message) {
+        const notificationModal = new bootstrap.Modal(document.getElementById('notificationModal'));
+        document.getElementById('notificationTitle').textContent = title;
+        document.getElementById('notificationMessage').textContent = message;
+        notificationModal.show();
+    }
+
+    // 订单类型转换为中文文本
+    function orderTypeToText(orderType) {
+        switch(orderType) {
+            case 'market':
+                return '市价单';
+            case 'limit':
+                return '限价单';
+            case 'stop':
+                return '止损单';
+            case 'stop_limit':
+                return '止损限价单';
+            default:
+                return orderType;
+        }
+    }
+</script>
+{% endblock %}

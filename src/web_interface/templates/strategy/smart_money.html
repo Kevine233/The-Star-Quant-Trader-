@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}庄家行为识别策略 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">庄家行为识别策略</h2>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>策略说明</h5>
+                </div>
+                <div class="card-body">
+                    <p>庄家行为识别策略是本系统的核心算法，通过多维数据分析识别市场中的大资金动向。主要特点包括：</p>
+                    <ul>
+                        <li>异常交易量识别</li>
+                        <li>价格操纵模式识别</li>
+                        <li>大单流向分析</li>
+                        <li>资金流入流出分析</li>
+                        <li>庄家操作评分系统</li>
+                    </ul>
+                    <p>通过结合这些指标，系统能够识别可能存在的庄家操作行为，并在合适时机发出交易信号。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>异常交易量识别</h5>
+                </div>
+                <div class="card-body">
+                    <p>本模块通过分析交易量的变化来识别异常模式：</p>
+                    <ul>
+                        <li>计算交易量的对数收益率</li>
+                        <li>使用滑动窗口计算均值和标准差</li>
+                        <li>计算交易量Z得分</li>
+                        <li>标记异常交易量</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>价格操纵模式识别</h5>
+                </div>
+                <div class="card-body">
+                    <p>本模块识别常见的价格操纵模式：</p>
+                    <ul>
+                        <li>拉高出货模式</li>
+                        <li>洗盘模式</li>
+                        <li>价格与成交量的相关性分析</li>
+                        <li>价格波动率异常检测</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>策略配置</h5>
+                </div>
+                <div class="card-body">
+                    <p>请前往<a href="/strategy/parameters">策略参数</a>页面进行详细配置。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block title %}持仓管理 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">持仓管理</h2>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between">
+                    <h5>账户概览</h5>
+                    <button class="btn btn-sm btn-outline-primary" id="refreshAccount">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">账户总资产</h6>
+                                    <h3 class="card-text" id="totalAsset">¥ 1,258,963.45</h3>
+                                    <small class="text-success">+2.37% (今日)</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">可用资金</h6>
+                                    <h3 class="card-text" id="availableFunds">¥ 524,871.20</h3>
+                                    <small>占总资产 41.69%</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">持仓市值</h6>
+                                    <h3 class="card-text" id="positionValue">¥ 734,092.25</h3>
+                                    <small>占总资产 58.31%</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">持仓盈亏</h6>
+                                    <h3 class="card-text text-success" id="positionProfit">+¥ 29,173.85</h3>
+                                    <small class="text-success">+4.14% (浮动盈亏)</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>当前持仓</h5>
+                    <div>
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary active" id="showAllPositions">全部</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="showStockPositions">股票</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="showCryptoPositions">加密货币</button>
+                        </div>
+                        <button class="btn btn-sm btn-outline-success" id="batchClosePositions">
+                            <i class="bi bi-bag-x"></i> 批量平仓
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAllPositions">
+                                        </div>
+                                    </th>
+                                    <th>交易品种</th>
+                                    <th>市场</th>
+                                    <th>持仓数量</th>
+                                    <th>开仓均价</th>
+                                    <th>当前价格</th>
+                                    <th>持仓市值</th>
+                                    <th>持仓盈亏</th>
+                                    <th>盈亏比例</th>
+                                    <th>持仓时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="positionsList">
+                                <tr class="stock-position">
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input position-check" type="checkbox">
+                                        </div>
+                                    </td>
+                                    <td>贵州茅台 (600519)</td>
+                                    <td>股票</td>
+                                    <td>100</td>
+                                    <td>1,825.00</td>
+                                    <td>1,899.55</td>
+                                    <td>189,955.00</td>
+                                    <td class="text-success">+7,455.00</td>
+                                    <td class="text-success">+4.08%</td>
+                                    <td>15天</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger close-position">平仓</button>
+                                        <button class="btn btn-sm btn-outline-primary edit-position">调整</button>
+                                    </td>
+                                </tr>
+                                <tr class="stock-position">
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input position-check" type="checkbox">
+                                        </div>
+                                    </td>
+                                    <td>中国平安 (601318)</td>
+                                    <td>股票</td>
+                                    <td>2000</td>
+                                    <td>45.80</td>
+                                    <td>43.25</td>
+                                    <td>86,500.00</td>
+                                    <td class="text-danger">-5,100.00</td>
+                                    <td class="text-danger">-5.57%</td>
+                                    <td>7天</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger close-position">平仓</button>
+                                        <button class="btn btn-sm btn-outline-primary edit-position">调整</button>
+                                    </td>
+                                </tr>
+                                <tr class="crypto-position">
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input position-check" type="checkbox">
+                                        </div>
+                                    </td>
+                                    <td>Bitcoin (BTC/USDT)</td>
+                                    <td>加密货币</td>
+                                    <td>1.25</td>
+                                    <td>41,250.00</td>
+                                    <td>42,568.75</td>
+                                    <td>53,210.94</td>
+                                    <td class="text-success">+1,648.44</td>
+                                    <td class="text-success">+3.20%</td>
+                                    <td>3天</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger close-position">平仓</button>
+                                        <button class="btn btn-sm btn-outline-primary edit-position">调整</button>
+                                    </td>
+                                </tr>
+                                <tr class="crypto-position">
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input position-check" type="checkbox">
+                                        </div>
+                                    </td>
+                                    <td>Ethereum (ETH/USDT)</td>
+                                    <td>加密货币</td>
+                                    <td>15.5</td>
+                                    <td>2,450.00</td>
+                                    <td>2,520.00</td>
+                                    <td>39,060.00</td>
+                                    <td class="text-success">+1,085.00</td>
+                                    <td class="text-success">+2.86%</td>
+                                    <td>5天</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger close-position">平仓</button>
+                                        <button class="btn btn-sm btn-outline-primary edit-position">调整</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5>止盈止损设置</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6>全局策略</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="globalStopSettingsForm">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="enableGlobalStrategy" checked>
+                                                <label class="form-check-label" for="enableGlobalStrategy">启用全局止盈止损策略</label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="globalStopLoss" class="form-label">止损阈值 (%)</label>
+                                            <input type="number" class="form-control" id="globalStopLoss" value="10" min="0" max="100" step="0.5">
+                                            <div class="form-text">当亏损超过此百分比时自动平仓</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="globalTakeProfit" class="form-label">止盈阈值 (%)</label>
+                                            <input type="number" class="form-control" id="globalTakeProfit" value="20" min="0" max="1000" step="0.5">
+                                            <div class="form-text">当盈利超过此百分比时自动平仓</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="trailingStop" class="form-label">追踪止损 (%)</label>
+                                            <input type="number" class="form-control" id="trailingStop" value="5" min="0" max="100" step="0.5">
+                                            <div class="form-text">当价格回撤超过最高点的此百分比时平仓</div>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary">保存全局设置</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6>单个持仓设置</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle"></i> 点击持仓列表中的"调整"按钮来设置单个持仓的止盈止损
+                                    </div>
+                                    
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6>策略优先级</h6>
+                                            <ol>
+                                                <li>单个持仓设置（最高优先级）</li>
+                                                <li>全局策略设置</li>
+                                                <li>系统默认设置</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 调整持仓模态框 -->
+<div class="modal fade" id="editPositionModal" tabindex="-1" aria-labelledby="editPositionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPositionModalLabel">调整持仓</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editPositionForm">
+                    <div class="mb-3">
+                        <label class="form-label">交易品种</label>
+                        <input type="text" class="form-control" id="editSymbolName" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editStopLoss" class="form-label">止损价格</label>
+                        <input type="number" class="form-control" id="editStopLoss" step="0.01">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editTakeProfit" class="form-label">止盈价格</label>
+                        <input type="number" class="form-control" id="editTakeProfit" step="0.01">
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="editUseTrailing">
+                        <label class="form-check-label" for="editUseTrailing">
+                            使用追踪止损
+                        </label>
+                    </div>
+                    
+                    <div class="mb-3" id="editTrailingField" style="display: none;">
+                        <label for="editTrailingPercent" class="form-label">追踪止损比例 (%)</label>
+                        <input type="number" class="form-control" id="editTrailingPercent" step="0.1" value="5">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="savePositionEdit">保存设置</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 平仓确认模态框 -->
+<div class="modal fade" id="closePositionModal" tabindex="-1" aria-labelledby="closePositionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="closePositionModalLabel">确认平仓</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>您确定要平仓以下持仓吗？</p>
+                <div id="closePositionList"></div>
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle"></i> 平仓操作不可撤销，请确认后操作。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmClosePosition">确认平仓</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // 持仓过滤
+        $('#showAllPositions').on('click', function() {
+            $('.stock-position, .crypto-position').show();
+            $(this).addClass('active').siblings().removeClass('active');
+        });
+        
+        $('#showStockPositions').on('click', function() {
+            $('.stock-position').show();
+            $('.crypto-position').hide();
+            $(this).addClass('active').siblings().removeClass('active');
+        });
+        
+        $('#showCryptoPositions').on('click', function() {
+            $('.crypto-position').show();
+            $('.stock-position').hide();
+            $(this).addClass('active').siblings().removeClass('active');
+        });
+        
+        // 全选/取消全选
+        $('#selectAllPositions').on('change', function() {
+            $('.position-check').prop('checked', $(this).is(':checked'));
+        });
+        
+        // 单个平仓
+        $('.close-position').on('click', function() {
+            const row = $(this).closest('tr');
+            const symbol = row.find('td:eq(1)').text();
+            
+            $('#closePositionList').html(`<div class="alert alert-info">${symbol}</div>`);
+            $('#closePositionModal').modal('show');
+        });
+        
+        // 批量平仓
+        $('#batchClosePositions').on('click', function() {
+            const selectedPositions = $('.position-check:checked');
+            
+            if (selectedPositions.length === 0) {
+                alert('请先选择要平仓的持仓');
+                return;
+            }
+            
+            let positionListHtml = '';
+            selectedPositions.each(function() {
+                const row = $(this).closest('tr');
+                const symbol = row.find('td:eq(1)').text();
+                positionListHtml += `<div class="alert alert-info">${symbol}</div>`;
+            });
+            
+            $('#closePositionList').html(positionListHtml);
+            $('#closePositionModal').modal('show');
+        });
+        
+        // 确认平仓
+        $('#confirmClosePosition').on('click', function() {
+            // 模拟平仓操作
+            alert('平仓操作已提交');
+            $('#closePositionModal').modal('hide');
+        });
+        
+        // 调整持仓
+        $('.edit-position').on('click', function() {
+            const row = $(this).closest('tr');
+            const symbol = row.find('td:eq(1)').text();
+            const currentPrice = parseFloat(row.find('td:eq(5)').text().replace(',', ''));
+            
+            $('#editSymbolName').val(symbol);
+            $('#editStopLoss').val((currentPrice * 0.9).toFixed(2));
+            $('#editTakeProfit').val((currentPrice * 1.1).toFixed(2));
+            
+            $('#editPositionModal').modal('show');
+        });
+        
+        // 追踪止损选项切换
+        $('#editUseTrailing').on('change', function() {
+            if ($(this).is(':checked')) {
+                $('#editTrailingField').show();
+            } else {
+                $('#editTrailingField').hide();
+            }
+        });
+        
+        // 保存持仓调整
+        $('#savePositionEdit').on('click', function() {
+            // 模拟保存操作
+            alert('持仓设置已更新');
+            $('#editPositionModal').modal('hide');
+        });
+        
+        // 保存全局设置
+        $('#globalStopSettingsForm').on('submit', function(e) {
+            e.preventDefault();
+            // 模拟保存操作
+            alert('全局止盈止损设置已更新');
+        });
+        
+        // 刷新账户
+        $('#refreshAccount').on('click', function() {
+            // 模拟刷新操作
+            $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> 刷新中...');
+            
+            setTimeout(function() {
+                $('#refreshAccount').prop('disabled', false).html('<i class="bi bi-arrow-clockwise"></i> 刷新');
+                alert('账户信息已刷新');
+            }, 1000);
+        });
+    });
+</script>
+{% endblock %} 

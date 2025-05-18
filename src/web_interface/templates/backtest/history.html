@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}回测历史 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">回测历史</h2>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <h5>历史回测记录</h5>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary me-2" id="refreshHistory">
+                            <i class="bi bi-arrow-clockwise"></i> 刷新
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="clearHistory">
+                            <i class="bi bi-trash"></i> 清除历史
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="backtest-history-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>策略名称</th>
+                                    <th>市场</th>
+                                    <th>交易品种</th>
+                                    <th>回测区间</th>
+                                    <th>总收益</th>
+                                    <th>最大回撤</th>
+                                    <th>交易次数</th>
+                                    <th>执行时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="backtest-history-body">
+                                <tr>
+                                    <td colspan="10" class="text-center">加载中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 回测详情模态框 -->
+<div class="modal fade" id="backtestDetailModal" tabindex="-1" aria-labelledby="backtestDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="backtestDetailModalLabel">回测详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">基本信息</h6>
+                            </div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">策略名称</dt>
+                                    <dd class="col-sm-8" id="detail-strategy-name">-</dd>
+                                    
+                                    <dt class="col-sm-4">市场</dt>
+                                    <dd class="col-sm-8" id="detail-market">-</dd>
+                                    
+                                    <dt class="col-sm-4">交易品种</dt>
+                                    <dd class="col-sm-8" id="detail-symbol">-</dd>
+                                    
+                                    <dt class="col-sm-4">回测区间</dt>
+                                    <dd class="col-sm-8" id="detail-period">-</dd>
+                                    
+                                    <dt class="col-sm-4">初始资金</dt>
+                                    <dd class="col-sm-8" id="detail-initial-capital">-</dd>
+                                    
+                                    <dt class="col-sm-4">手续费率</dt>
+                                    <dd class="col-sm-8" id="detail-commission">-</dd>
+                                    
+                                    <dt class="col-sm-4">滑点设置</dt>
+                                    <dd class="col-sm-8" id="detail-slippage">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">绩效统计</h6>
+                            </div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">总收益</dt>
+                                    <dd class="col-sm-8" id="detail-total-return">-</dd>
+                                    
+                                    <dt class="col-sm-4">年化收益率</dt>
+                                    <dd class="col-sm-8" id="detail-annual-return">-</dd>
+                                    
+                                    <dt class="col-sm-4">夏普比率</dt>
+                                    <dd class="col-sm-8" id="detail-sharpe">-</dd>
+                                    
+                                    <dt class="col-sm-4">最大回撤</dt>
+                                    <dd class="col-sm-8" id="detail-max-drawdown">-</dd>
+                                    
+                                    <dt class="col-sm-4">胜率</dt>
+                                    <dd class="col-sm-8" id="detail-win-rate">-</dd>
+                                    
+                                    <dt class="col-sm-4">收益风险比</dt>
+                                    <dd class="col-sm-8" id="detail-profit-ratio">-</dd>
+                                    
+                                    <dt class="col-sm-4">总交易次数</dt>
+                                    <dd class="col-sm-8" id="detail-trade-count">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <ul class="nav nav-tabs" id="resultTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="equity-tab" data-bs-toggle="tab" data-bs-target="#equity" type="button" role="tab">权益曲线</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="drawdown-tab" data-bs-toggle="tab" data-bs-target="#drawdown" type="button" role="tab">回撤分析</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab">月度收益</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="trades-tab" data-bs-toggle="tab" data-bs-target="#trades" type="button" role="tab">交易记录</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content pt-3" id="resultTabsContent">
+                            <div class="tab-pane fade show active" id="equity" role="tabpanel">
+                                <div id="equity-chart" style="height: 400px;"></div>
+                            </div>
+                            <div class="tab-pane fade" id="drawdown" role="tabpanel">
+                                <div id="drawdown-chart" style="height: 400px;"></div>
+                            </div>
+                            <div class="tab-pane fade" id="monthly" role="tabpanel">
+                                <div id="monthly-chart" style="height: 400px;"></div>
+                            </div>
+                            <div class="tab-pane fade" id="trades" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover" id="trades-table">
+                                        <thead>
+                                            <tr>
+                                                <th>序号</th>
+                                                <th>开仓时间</th>
+                                                <th>平仓时间</th>
+                                                <th>方向</th>
+                                                <th>开仓价</th>
+                                                <th>平仓价</th>
+                                                <th>数量</th>
+                                                <th>收益</th>
+                                                <th>收益率</th>
+                                                <th>持仓时长</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="trades-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="detail-reproduce">重复此回测</button>
+                <button type="button" class="btn btn-success" id="detail-optimize">优化参数</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // 加载回测历史
+        function loadBacktestHistory() {
+            $('#backtest-history-body').html('<tr><td colspan="10" class="text-center">加载中...</td></tr>');
+            
+            $.ajax({
+                url: '/api/backtest/history',
+                type: 'GET',
+                success: function(response) {
+                    if(response.success && response.history) {
+                        const history = response.history;
+                        let html = '';
+                        
+                        if(history.length === 0) {
+                            html = '<tr><td colspan="10" class="text-center">暂无回测记录</td></tr>';
+                        } else {
+                            history.forEach(function(item) {
+                                const profit = parseFloat(item.total_return);
+                                const profitClass = profit >= 0 ? 'text-success' : 'text-danger';
+                                const profitSign = profit >= 0 ? '+' : '';
+                                
+                                html += `
+                                <tr>
+                                    <td>${item.id}</td>
+                                    <td>${item.strategy_name}</td>
+                                    <td>${item.market_type === 'stock' ? '股票' : '加密货币'}</td>
+                                    <td>${item.symbol}</td>
+                                    <td>${item.start_date} 至 ${item.end_date}</td>
+                                    <td class="${profitClass}">${profitSign}${profit.toFixed(2)}%</td>
+                                    <td>${item.max_drawdown}%</td>
+                                    <td>${item.trade_count}次</td>
+                                    <td>${new Date(item.created_at).toLocaleString()}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary view-detail" data-id="${item.id}">详情</button>
+                                        <button class="btn btn-sm btn-outline-danger delete-backtest" data-id="${item.id}">删除</button>
+                                    </td>
+                                </tr>
+                                `;
+                            });
+                        }
+                        
+                        $('#backtest-history-body').html(html);
+                        
+                        // 绑定详情按钮事件
+                        $('.view-detail').on('click', function() {
+                            const backtestId = $(this).data('id');
+                            showBacktestDetail(backtestId);
+                        });
+                        
+                        // 绑定删除按钮事件
+                        $('.delete-backtest').on('click', function() {
+                            const backtestId = $(this).data('id');
+                            deleteBacktest(backtestId);
+                        });
+                    } else {
+                        $('#backtest-history-body').html('<tr><td colspan="10" class="text-center text-danger">加载失败: ' + (response.message || '未知错误') + '</td></tr>');
+                    }
+                },
+                error: function() {
+                    $('#backtest-history-body').html('<tr><td colspan="10" class="text-center text-danger">加载失败，请检查网络连接</td></tr>');
+                }
+            });
+        }
+        
+        // 显示回测详情
+        function showBacktestDetail(backtestId) {
+            // 清空上次数据
+            $('#detail-strategy-name, #detail-market, #detail-symbol, #detail-period, #detail-initial-capital, #detail-commission, #detail-slippage').text('-');
+            $('#detail-total-return, #detail-annual-return, #detail-sharpe, #detail-max-drawdown, #detail-win-rate, #detail-profit-ratio, #detail-trade-count').text('-');
+            $('#trades-body').empty();
+            
+            // 加载回测详情
+            $.ajax({
+                url: '/api/backtest/detail/' + backtestId,
+                type: 'GET',
+                success: function(response) {
+                    if(response.success && response.detail) {
+                        const detail = response.detail;
+                        
+                        // 填充基本信息
+                        $('#detail-strategy-name').text(detail.strategy_name);
+                        $('#detail-market').text(detail.market_type === 'stock' ? '股票' : '加密货币');
+                        $('#detail-symbol').text(detail.symbol);
+                        $('#detail-period').text(detail.start_date + ' 至 ' + detail.end_date);
+                        $('#detail-initial-capital').text(detail.initial_capital);
+                        $('#detail-commission').text(detail.commission_rate + '%');
+                        $('#detail-slippage').text(detail.slippage + '%');
+                        
+                        // 填充绩效统计
+                        const profit = parseFloat(detail.total_return);
+                        const profitClass = profit >= 0 ? 'text-success' : 'text-danger';
+                        const profitSign = profit >= 0 ? '+' : '';
+                        
+                        $('#detail-total-return').html(`<span class="${profitClass}">${profitSign}${profit.toFixed(2)}%</span>`);
+                        $('#detail-annual-return').text(detail.annual_return + '%');
+                        $('#detail-sharpe').text(detail.sharpe_ratio);
+                        $('#detail-max-drawdown').text(detail.max_drawdown + '%');
+                        $('#detail-win-rate').text(detail.win_rate + '%');
+                        $('#detail-profit-ratio').text(detail.profit_ratio);
+                        $('#detail-trade-count').text(detail.trade_count + '次');
+                        
+                        // 渲染权益曲线图
+                        if (detail.equity_curve) {
+                            Plotly.newPlot('equity-chart', JSON.parse(detail.equity_curve));
+                        }
+                        
+                        // 渲染回撤分析图
+                        if (detail.drawdown_chart) {
+                            Plotly.newPlot('drawdown-chart', JSON.parse(detail.drawdown_chart));
+                        }
+                        
+                        // 渲染月度收益图
+                        if (detail.monthly_returns) {
+                            Plotly.newPlot('monthly-chart', JSON.parse(detail.monthly_returns));
+                        }
+                        
+                        // 填充交易记录表
+                        if (detail.trades && detail.trades.length > 0) {
+                            let tradesHtml = '';
+                            detail.trades.forEach(function(trade, index) {
+                                const tradeProfit = parseFloat(trade.profit);
+                                const tradeProfitClass = tradeProfit >= 0 ? 'text-success' : 'text-danger';
+                                const tradeProfitSign = tradeProfit >= 0 ? '+' : '';
+                                
+                                tradesHtml += `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${trade.entry_time}</td>
+                                    <td>${trade.exit_time}</td>
+                                    <td>${trade.direction === 'long' ? '多' : '空'}</td>
+                                    <td>${trade.entry_price}</td>
+                                    <td>${trade.exit_price}</td>
+                                    <td>${trade.quantity}</td>
+                                    <td class="${tradeProfitClass}">${tradeProfitSign}${tradeProfit.toFixed(2)}</td>
+                                    <td class="${tradeProfitClass}">${tradeProfitSign}${(trade.profit_pct * 100).toFixed(2)}%</td>
+                                    <td>${trade.duration}</td>
+                                </tr>
+                                `;
+                            });
+                            $('#trades-body').html(tradesHtml);
+                        } else {
+                            $('#trades-body').html('<tr><td colspan="10" class="text-center">无交易记录</td></tr>');
+                        }
+                        
+                        // 设置详情模态框按钮事件
+                        $('#detail-reproduce').data('id', backtestId);
+                        $('#detail-optimize').data('id', backtestId);
+                        
+                        // 显示模态框
+                        const modal = new bootstrap.Modal(document.getElementById('backtestDetailModal'));
+                        modal.show();
+                    } else {
+                        alert('加载回测详情失败: ' + (response.message || '未知错误'));
+                    }
+                },
+                error: function() {
+                    alert('加载回测详情失败，请检查网络连接');
+                }
+            });
+        }
+        
+        // 删除回测记录
+        function deleteBacktest(backtestId) {
+            if (confirm('确定要删除此回测记录吗？此操作不可撤销。')) {
+                $.ajax({
+                    url: '/api/backtest/delete/' + backtestId,
+                    type: 'POST',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('删除成功');
+                            loadBacktestHistory();
+                        } else {
+                            alert('删除失败: ' + (response.message || '未知错误'));
+                        }
+                    },
+                    error: function() {
+                        alert('删除失败，请检查网络连接');
+                    }
+                });
+            }
+        }
+        
+        // 清除所有回测历史
+        $('#clearHistory').on('click', function() {
+            if (confirm('确定要清除所有回测历史记录吗？此操作不可撤销。')) {
+                $.ajax({
+                    url: '/api/backtest/clear_history',
+                    type: 'POST',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('清除成功');
+                            loadBacktestHistory();
+                        } else {
+                            alert('清除失败: ' + (response.message || '未知错误'));
+                        }
+                    },
+                    error: function() {
+                        alert('清除失败，请检查网络连接');
+                    }
+                });
+            }
+        });
+        
+        // 刷新历史按钮
+        $('#refreshHistory').on('click', function() {
+            loadBacktestHistory();
+        });
+        
+        // 重复回测按钮
+        $('#detail-reproduce').on('click', function() {
+            const backtestId = $(this).data('id');
+            window.location.href = '/backtest/new?reproduce=' + backtestId;
+        });
+        
+        // 优化参数按钮
+        $('#detail-optimize').on('click', function() {
+            const backtestId = $(this).data('id');
+            window.location.href = '/backtest/optimize?backtest_id=' + backtestId;
+        });
+        
+        // 初始加载历史记录
+        loadBacktestHistory();
+    });
+</script>
+{% endblock %} 

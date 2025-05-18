@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+
+{% block title %}交易历史 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">交易历史</h2>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>历史交易记录</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary me-2" id="exportHistory">
+                            <i class="bi bi-download"></i> 导出数据
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" id="refreshHistory">
+                            <i class="bi bi-arrow-clockwise"></i> 刷新
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <form id="historyFilterForm" class="row row-cols-lg-auto g-3 align-items-center">
+                                <div class="col-12">
+                                    <div class="input-group">
+                                        <div class="input-group-text">市场</div>
+                                        <select class="form-select" id="marketFilter">
+                                            <option value="all">全部</option>
+                                            <option value="stock">股票</option>
+                                            <option value="crypto">加密货币</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="input-group">
+                                        <div class="input-group-text">交易品种</div>
+                                        <input type="text" class="form-control" id="symbolFilter" placeholder="输入代码或名称">
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="input-group">
+                                        <div class="input-group-text">日期范围</div>
+                                        <input type="date" class="form-control" id="startDateFilter">
+                                        <div class="input-group-text">至</div>
+                                        <input type="date" class="form-control" id="endDateFilter">
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-search"></i> 查询
+                                    </button>
+                                    <button type="reset" class="btn btn-outline-secondary ms-2">重置</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>交易时间</th>
+                                    <th>交易品种</th>
+                                    <th>市场</th>
+                                    <th>方向</th>
+                                    <th>类型</th>
+                                    <th>价格</th>
+                                    <th>数量</th>
+                                    <th>交易额</th>
+                                    <th>手续费</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTable">
+                                <tr>
+                                    <td>2025-05-10 14:35:22</td>
+                                    <td>贵州茅台 (600519)</td>
+                                    <td>股票</td>
+                                    <td class="text-success">买入</td>
+                                    <td>限价单</td>
+                                    <td>1,825.00</td>
+                                    <td>100</td>
+                                    <td>182,500.00</td>
+                                    <td>54.75</td>
+                                    <td><span class="badge bg-success">已成交</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary view-details">详情</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2025-05-12 09:45:18</td>
+                                    <td>中国平安 (601318)</td>
+                                    <td>股票</td>
+                                    <td class="text-success">买入</td>
+                                    <td>市价单</td>
+                                    <td>45.80</td>
+                                    <td>2000</td>
+                                    <td>91,600.00</td>
+                                    <td>27.48</td>
+                                    <td><span class="badge bg-success">已成交</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary view-details">详情</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2025-05-15 22:18:45</td>
+                                    <td>Bitcoin (BTC/USDT)</td>
+                                    <td>加密货币</td>
+                                    <td class="text-success">买入</td>
+                                    <td>限价单</td>
+                                    <td>41,250.00</td>
+                                    <td>1.25</td>
+                                    <td>51,562.50</td>
+                                    <td>25.78</td>
+                                    <td><span class="badge bg-success">已成交</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary view-details">详情</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2025-05-16 10:22:37</td>
+                                    <td>Ethereum (ETH/USDT)</td>
+                                    <td>加密货币</td>
+                                    <td class="text-success">买入</td>
+                                    <td>市价单</td>
+                                    <td>2,450.00</td>
+                                    <td>15.5</td>
+                                    <td>37,975.00</td>
+                                    <td>18.99</td>
+                                    <td><span class="badge bg-success">已成交</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary view-details">详情</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <nav>
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">上一页</a>
+                            </li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">下一页</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5>交易统计</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">近期交易概览</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    交易总数
+                                                    <span class="badge bg-primary rounded-pill">24</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    买入交易
+                                                    <span class="badge bg-success rounded-pill">16</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    卖出交易
+                                                    <span class="badge bg-danger rounded-pill">8</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    成功交易
+                                                    <span class="badge bg-success rounded-pill">22</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    取消交易
+                                                    <span class="badge bg-warning rounded-pill">2</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    总手续费
+                                                    <span>¥ 256.78</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">交易盈亏分析</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="profitChart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 交易详情模态框 -->
+<div class="modal fade" id="tradeDetailModal" tabindex="-1" aria-labelledby="tradeDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tradeDetailModalLabel">交易详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>基本信息</h6>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th>交易ID</th>
+                                    <td id="detailTradeId">TR123456789</td>
+                                </tr>
+                                <tr>
+                                    <th>交易时间</th>
+                                    <td id="detailTime">2025-05-10 14:35:22</td>
+                                </tr>
+                                <tr>
+                                    <th>交易品种</th>
+                                    <td id="detailSymbol">贵州茅台 (600519)</td>
+                                </tr>
+                                <tr>
+                                    <th>市场</th>
+                                    <td id="detailMarket">股票</td>
+                                </tr>
+                                <tr>
+                                    <th>交易方向</th>
+                                    <td id="detailDirection" class="text-success">买入</td>
+                                </tr>
+                                <tr>
+                                    <th>交易类型</th>
+                                    <td id="detailType">限价单</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>成交信息</h6>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th>成交价格</th>
+                                    <td id="detailPrice">1,825.00</td>
+                                </tr>
+                                <tr>
+                                    <th>成交数量</th>
+                                    <td id="detailQuantity">100</td>
+                                </tr>
+                                <tr>
+                                    <th>成交金额</th>
+                                    <td id="detailAmount">182,500.00</td>
+                                </tr>
+                                <tr>
+                                    <th>手续费</th>
+                                    <td id="detailFee">54.75</td>
+                                </tr>
+                                <tr>
+                                    <th>成交状态</th>
+                                    <td id="detailStatus"><span class="badge bg-success">已成交</span></td>
+                                </tr>
+                                <tr>
+                                    <th>交易账户</th>
+                                    <td id="detailAccount">主账户</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <h6 class="mt-3">交易备注</h6>
+                <div class="alert alert-light" id="detailNotes">
+                    系统基于庄家行为模型生成的买入信号，信号强度78%。检测到异常交易量和价格模式，预计后续有较大上涨空间。
+                </div>
+                
+                <h6 class="mt-3">相关信号分析</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>指标</th>
+                                <th>数值</th>
+                                <th>评估</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>交易量异常评分</td>
+                                <td>85/100</td>
+                                <td><span class="badge bg-success">强信号</span></td>
+                            </tr>
+                            <tr>
+                                <td>价格形态评分</td>
+                                <td>72/100</td>
+                                <td><span class="badge bg-success">强信号</span></td>
+                            </tr>
+                            <tr>
+                                <td>大单资金流向</td>
+                                <td>68/100</td>
+                                <td><span class="badge bg-primary">中等信号</span></td>
+                            </tr>
+                            <tr>
+                                <td>整体评分</td>
+                                <td>78/100</td>
+                                <td><span class="badge bg-success">建议买入</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-outline-primary" id="printDetail">
+                    <i class="bi bi-printer"></i> 打印
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        // 初始化日期选择器默认值
+        const today = new Date();
+        const monthAgo = new Date();
+        monthAgo.setMonth(today.getMonth() - 1);
+        
+        $('#startDateFilter').val(monthAgo.toISOString().split('T')[0]);
+        $('#endDateFilter').val(today.toISOString().split('T')[0]);
+        
+        // 查看交易详情
+        $('.view-details').on('click', function() {
+            // 在实际项目中，这里应该通过AJAX获取交易详情
+            // 这里仅做演示，使用模拟数据
+            $('#tradeDetailModal').modal('show');
+        });
+        
+        // 导出历史数据
+        $('#exportHistory').on('click', function() {
+            alert('交易历史已导出到CSV文件');
+        });
+        
+        // 刷新历史数据
+        $('#refreshHistory').on('click', function() {
+            $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> 刷新中...');
+            
+            // 模拟刷新
+            setTimeout(function() {
+                $('#refreshHistory').prop('disabled', false).html('<i class="bi bi-arrow-clockwise"></i> 刷新');
+                alert('交易历史已刷新');
+            }, 1000);
+        });
+        
+        // 表单提交过滤
+        $('#historyFilterForm').on('submit', function(e) {
+            e.preventDefault();
+            alert('应用筛选条件');
+            // 在实际项目中，这里应该根据筛选条件获取交易历史
+        });
+        
+        // 打印交易详情
+        $('#printDetail').on('click', function() {
+            alert('准备打印交易详情');
+            // 在实际项目中，这里应该调用浏览器打印功能
+        });
+        
+        // 初始化交易盈亏分析图表
+        const ctx = document.getElementById('profitChart').getContext('2d');
+        const profitChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['1月', '2月', '3月', '4月', '5月'],
+                datasets: [{
+                    label: '月度交易盈亏',
+                    data: [12500, -8200, 15800, 9300, 22400],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.5)',
+                        'rgba(220, 53, 69, 0.5)',
+                        'rgba(40, 167, 69, 0.5)',
+                        'rgba(40, 167, 69, 0.5)',
+                        'rgba(40, 167, 69, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(220, 53, 69, 1)',
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(40, 167, 69, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '盈亏金额 (元)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '月份'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '2025年交易盈亏统计',
+                        font: {
+                            size: 16
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,90 @@
+<!-- 这是一个重要的测试文本，如果您能看到这行，说明模板已更新！ -->
+{% macro nav_item(path, icon, text) -%}
+    <li class="nav-item">
+        <a class="nav-link {{ 'active' if request.path == path else '' }}" href="{{ path }}">
+            <i class="bi bi-{{ icon }} me-1"></i>{{ text }}
+        </a>
+    </li>
+{%- endmacro %}
+
+{% macro dropdown_item(path, icon, text) -%}
+    <li>
+        <a class="dropdown-item {{ 'active' if request.path == path else '' }}" href="{{ path }}">
+            <i class="bi bi-{{ icon }} me-1"></i>{{ text }}
+        </a>
+    </li>
+{%- endmacro %}
+
+{% macro nav_dropdown(id, icon, text, active_check) -%}
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle {{ 'active' if active_check in request.path else '' }}" href="#" id="{{ id }}Dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-{{ icon }} me-1"></i>{{ text }}
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="{{ id }}Dropdown">
+            {{ caller() }}
+        </ul>
+    </li>
+{%- endmacro %}
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <i class="bi bi-graph-up me-2"></i>The Star
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <!-- 仪表盘 -->
+                {{ nav_item('/dashboard', 'speedometer2', '仪表盘') }}
+                
+                <!-- 市场分析 -->
+                {% call nav_dropdown('market', 'bar-chart-line', '市场分析', '/market') %}
+                    {{ dropdown_item('/stock', 'graph-up-arrow', 'A股市场') }}
+                    {{ dropdown_item('/crypto', 'currency-bitcoin', '加密货币') }}
+                {% endcall %}
+                
+                <!-- 策略管理 -->
+                {% call nav_dropdown('strategy', 'gear-wide-connected', '策略管理', '/strategy') %}
+                    {{ dropdown_item('/strategy/smart_money', 'graph-up', '庄家行为识别') }}
+                    {{ dropdown_item('/strategy/parameters', 'sliders', '策略参数') }}
+                    {{ dropdown_item('/strategy/custom', 'code-slash', '自定义策略') }}
+                {% endcall %}
+                
+                <!-- 回测系统 -->
+                {% call nav_dropdown('backtest', 'clock-history', '回测系统', '/backtest') %}
+                    {{ dropdown_item('/backtest/new', 'plus-circle', '新建回测') }}
+                    {{ dropdown_item('/backtest/history', 'card-list', '回测记录') }}
+                    {{ dropdown_item('/backtest/optimize', 'stars', '参数优化') }}
+                {% endcall %}
+                
+                <!-- 实盘交易 -->
+                {% call nav_dropdown('trading', 'cash-coin', '实盘交易', '/trading') %}
+                    {{ dropdown_item('/trading/execute', 'lightning', '交易执行') }}
+                    {{ dropdown_item('/trading/positions', 'card-checklist', '持仓管理') }}
+                    {{ dropdown_item('/trading/history', 'journal-text', '交易记录') }}
+                {% endcall %}
+                
+                <!-- 系统设置 -->
+                {% call nav_dropdown('settings', 'gear', '系统设置', '/settings') %}
+                    {{ dropdown_item('/api_config', 'key', 'API管理') }}
+                    {{ dropdown_item('/settings/risk', 'shield-check', '风控设置') }}
+                    {{ dropdown_item('/settings', 'sliders', '一般设置') }}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#systemStatusModal">
+                            <i class="bi bi-info-circle me-1"></i>系统状态
+                        </a>
+                    </li>
+                {% endcall %}
+            </ul>
+            
+            <!-- 搜索框 -->
+            <form class="d-flex">
+                <input class="form-control me-2" type="search" placeholder="搜索" aria-label="Search">
+                <button class="btn btn-outline-light" type="submit">搜索</button>
+            </form>
+        </div>
+    </div>
+</nav> 

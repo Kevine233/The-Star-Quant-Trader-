@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}API配置 - 跟随庄家自动交易系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-key-fill me-2"></i>API配置管理</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill me-2"></i>请配置数据源API密钥，以获取实时市场数据。API密钥信息将保存在本地配置文件中。
+                    </div>
+
+                    <!-- 加密货币API配置 -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="bi bi-currency-bitcoin me-2"></i>加密货币数据源配置</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="crypto-api-form">
+                                <div class="row mb-3">
+                                    <label for="crypto-provider" class="col-sm-2 col-form-label">数据提供商</label>
+                                    <div class="col-sm-10">
+                                        <select class="form-select" id="crypto-provider" name="provider">
+                                            <option value="binance" selected>币安 (Binance)</option>
+                                            <option value="coingecko">CoinGecko</option>
+                                            <option value="glassnode">Glassnode (链上数据)</option>
+                                            <option value="lunarcrush">LunarCrush (社交情绪)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label for="crypto-api-key" class="col-sm-2 col-form-label">API密钥</label>
+                                    <div class="col-sm-10">
+                                        <input type="text" class="form-control" id="crypto-api-key" name="api_key" 
+                                               placeholder="输入API密钥" value="{{ crypto_api.api_key if crypto_api else '' }}">
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label for="crypto-api-secret" class="col-sm-2 col-form-label">API密钥Secret</label>
+                                    <div class="col-sm-10">
+                                        <input type="password" class="form-control" id="crypto-api-secret" name="api_secret"
+                                               placeholder="输入API密钥Secret" value="{{ crypto_api.api_secret if crypto_api else '' }}">
+                                        <div class="form-text">对于Binance等交易所，需要提供API Secret</div>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-10 offset-sm-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="crypto-use-public-api" 
+                                                   {% if crypto_api.use_public_api %}checked{% endif %}>
+                                            <label class="form-check-label" for="crypto-use-public-api">
+                                                使用公共API（无需密钥，仅限公开市场数据）
+                                            </label>
+                                            <div class="form-text">选择此选项可使用币安公共API，无需密钥，但只能访问公开数据</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-10 offset-sm-2">
+                                        <button type="button" id="test-crypto-api" class="btn btn-outline-primary me-2">
+                                            <i class="bi bi-check-circle me-1"></i>测试连接
+                                        </button>
+                                        <button type="button" id="save-crypto-api" class="btn btn-primary">
+                                            <i class="bi bi-save me-1"></i>保存配置
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="mt-3" id="crypto-api-test-result"></div>
+                        </div>
+                    </div>
+
+                    <!-- 股票市场API配置 -->
+                    <div class="card">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i>股票市场数据源配置</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="stock-api-form">
+                                <div class="row mb-3">
+                                    <label for="stock-provider" class="col-sm-2 col-form-label">数据提供商</label>
+                                    <div class="col-sm-10">
+                                        <select class="form-select" id="stock-provider" name="provider">
+                                            <option value="tushare" selected>Tushare (专业数据)</option>
+                                            <option value="akshare">AKShare (免费数据)</option>
+                                            <option value="baostock">BaoStock (免费数据)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label for="stock-api-key" class="col-sm-2 col-form-label">API密钥</label>
+                                    <div class="col-sm-10">
+                                        <input type="text" class="form-control" id="stock-api-key" name="api_key"
+                                               placeholder="输入API密钥" value="{{ stock_api.api_key if stock_api else '' }}">
+                                        <div class="form-text">
+                                            <span id="api-provider-hint">Tushare需要API密钥，可以从<a href="https://tushare.pro/register" target="_blank">官网</a>获取</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-10 offset-sm-2">
+                                        <button type="button" id="test-stock-api" class="btn btn-outline-primary me-2">
+                                            <i class="bi bi-check-circle me-1"></i>测试连接
+                                        </button>
+                                        <button type="button" id="save-stock-api" class="btn btn-primary">
+                                            <i class="bi bi-save me-1"></i>保存配置
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="mt-3" id="stock-api-test-result"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据连接状态模态框 -->
+<div class="modal fade" id="connection-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="connection-modal-title">数据连接状态</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="connection-modal-body">
+                正在测试连接...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // 测试加密货币API连接
+        $('#test-crypto-api').click(function() {
+            const provider = $('#crypto-provider').val();
+            const apiKey = $('#crypto-api-key').val().trim();
+            const apiSecret = $('#crypto-api-secret').val().trim();
+            
+            if (!apiKey) {
+                showAlert('#crypto-api-test-result', '请输入API密钥', 'danger');
+                return;
+            }
+            
+            // 显示测试中状态
+            showAlert('#crypto-api-test-result', '正在测试连接，请稍候...', 'info');
+            
+            // 发送AJAX请求测试连接
+            $.ajax({
+                url: '/api/test_crypto_connection',
+                type: 'POST',
+                data: JSON.stringify({
+                    provider: provider,
+                    api_key: apiKey,
+                    api_secret: apiSecret
+                }),
+                contentType: 'application/json',
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('#crypto-api-test-result', response.message, 'success');
+                    } else {
+                        showAlert('#crypto-api-test-result', response.message, 'danger');
+                    }
+                },
+                error: function(error) {
+                    showAlert('#crypto-api-test-result', '连接测试失败: ' + error.responseText, 'danger');
+                }
+            });
+        });
+        
+        // 根据是否使用公共API切换API密钥输入字段的启用状态
+        $('#crypto-use-public-api').change(function() {
+            const usePublicApi = $(this).is(':checked');
+            if (usePublicApi) {
+                $('#crypto-api-key, #crypto-api-secret').prop('disabled', true);
+            } else {
+                $('#crypto-api-key, #crypto-api-secret').prop('disabled', false);
+            }
+        }).trigger('change');
+        
+        // 修改保存加密货币API配置的逻辑
+        $('#save-crypto-api').click(function() {
+            const provider = $('#crypto-provider').val();
+            const usePublicApi = $('#crypto-use-public-api').is(':checked');
+            const apiKey = $('#crypto-api-key').val().trim();
+            const apiSecret = $('#crypto-api-secret').val().trim();
+            
+            // 如果不使用公共API且未输入API密钥，显示警告
+            if (!usePublicApi && !apiKey) {
+                showAlert('#crypto-api-test-result', '请输入API密钥或选择使用公共API', 'danger');
+                return;
+            }
+            
+            // 发送AJAX请求保存配置
+            $.ajax({
+                url: '/api/save_crypto_config',
+                type: 'POST',
+                data: JSON.stringify({
+                    provider: provider,
+                    api_key: apiKey,
+                    api_secret: apiSecret,
+                    use_public_api: usePublicApi
+                }),
+                contentType: 'application/json',
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('#crypto-api-test-result', response.message, 'success');
+                    } else {
+                        showAlert('#crypto-api-test-result', response.message, 'danger');
+                    }
+                },
+                error: function(error) {
+                    showAlert('#crypto-api-test-result', '保存配置失败: ' + error.responseText, 'danger');
+                }
+            });
+        });
+        
+        // 测试股票API连接
+        $('#test-stock-api').click(function() {
+            const provider = $('#stock-provider').val();
+            const apiKey = $('#stock-api-key').val().trim();
+            
+            if (!apiKey && provider === 'tushare') {
+                showAlert('#stock-api-test-result', '请输入API密钥', 'danger');
+                return;
+            }
+            
+            // 显示测试中状态
+            showAlert('#stock-api-test-result', '正在测试连接，请稍候...', 'info');
+            
+            // 发送AJAX请求测试连接
+            $.ajax({
+                url: '/api/test_stock_connection',
+                type: 'POST',
+                data: JSON.stringify({
+                    provider: provider,
+                    api_key: apiKey
+                }),
+                contentType: 'application/json',
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('#stock-api-test-result', response.message, 'success');
+                    } else {
+                        showAlert('#stock-api-test-result', response.message, 'danger');
+                    }
+                },
+                error: function(error) {
+                    showAlert('#stock-api-test-result', '连接测试失败: ' + error.responseText, 'danger');
+                }
+            });
+        });
+        
+        // 保存股票API配置
+        $('#save-stock-api').click(function() {
+            const provider = $('#stock-provider').val();
+            const apiKey = $('#stock-api-key').val().trim();
+            
+            if (!apiKey && provider === 'tushare') {
+                showAlert('#stock-api-test-result', '请输入API密钥', 'danger');
+                return;
+            }
+            
+            // 发送AJAX请求保存配置
+            $.ajax({
+                url: '/api/save_stock_config',
+                type: 'POST',
+                data: JSON.stringify({
+                    provider: provider,
+                    api_key: apiKey
+                }),
+                contentType: 'application/json',
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('#stock-api-test-result', response.message, 'success');
+                    } else {
+                        showAlert('#stock-api-test-result', response.message, 'danger');
+                    }
+                },
+                error: function(error) {
+                    showAlert('#stock-api-test-result', '保存配置失败: ' + error.responseText, 'danger');
+                }
+            });
+        });
+        
+        // 显示警告信息的函数
+        function showAlert(target, message, type) {
+            $(target).html(`
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `);
+        }
+        
+        // 根据选择的数据提供商更新提示信息
+        $('#stock-provider').change(function() {
+            const provider = $(this).val();
+            let hint = '';
+            
+            if (provider === 'tushare') {
+                hint = 'Tushare需要API密钥，可以从<a href="https://tushare.pro/register" target="_blank">官网</a>获取';
+                $('#stock-api-key').prop('disabled', false);
+            } else if (provider === 'akshare') {
+                hint = 'AKShare为免费数据源，无需API密钥';
+                $('#stock-api-key').prop('disabled', true).val('');
+            } else if (provider === 'baostock') {
+                hint = 'BaoStock为免费数据源，无需API密钥';
+                $('#stock-api-key').prop('disabled', true).val('');
+            }
+            
+            $('#api-provider-hint').html(hint);
+        });
+    });
+</script>
+{% endblock %} 
