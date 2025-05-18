@@ -1,4 +1,4 @@
-# 跟随庄家自动交易系统 (Smart Money Follow System) - v4 深度解析
+# The Star系统 (Smart Money Follow System) - v4 深度解析
 
 ## 1. 项目简介
 
